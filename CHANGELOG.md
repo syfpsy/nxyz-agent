@@ -3,13 +3,16 @@
 All notable changes to **nxyz agent** are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to [SemVer](https://semver.org/).
 
-## [Unreleased]
+## [0.1.1] — 2026-06-08
 
 ### Changed
 - **Default folders are now plugin-named** (`nxyz agent`, `nxyz agent/Context Packs`,
   `nxyz agent/Work Logs`) instead of `09 Repo Registry…`, so a fresh install never lands its project
   cards in an unrelated PARA-style folder. Existing installs keep their saved folders — change them in
   **Settings → nxyz agent** if you want the new layout.
+
+### Internal
+- Added `docs/DISTRIBUTION.md` (install / BRAT / release flow / public-readiness).
 
 ## [0.1.0] — 2026-06-08
 

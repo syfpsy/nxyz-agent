@@ -1,6 +1,6 @@
 {
 	"name": "obsidian-nxyz-agent",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"description": "Local-first project memory and AI-agent handoff: project cards, context packs, work logs.",
 	"main": "main.js",
 	"type": "module",
