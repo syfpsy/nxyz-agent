@@ -6,6 +6,37 @@ import type { ContextAssembly, ProjectStatus } from "./types";
  * Markdown in one place makes the on-disk schema easy to review and evolve.
  */
 
+/**
+ * Code-fence languages that execute via community plugins (Dataview, JS Engine,
+ * Templater, Meta Bind, …). Untrusted model replies must not run these.
+ */
+const EXECUTABLE_FENCE_LANGS =
+	"dataviewjs|dataview|js-engine|jsengine|run-js|runjs|templater|meta-bind-button|meta-bind-js|meta-bind";
+
+/**
+ * Make a model reply safe to feed into Obsidian's Markdown renderer:
+ *   - relabel executable code fences (e.g. ```dataviewjs) to inert `text`, so
+ *     no community-plugin code processor runs against the vault;
+ *   - neutralize `![[…]]` transclusions so a reply can't inline arbitrary notes.
+ * Inline `[[links]]` are left intact (navigation only, resolved via sourcePath).
+ */
+export function sanitizeReplyMarkdown(md: string): string {
+	const fenceOpen = new RegExp(
+		`^([ \\t]*(?:\`{3,}|~{3,}))[ \\t]*(?:${EXECUTABLE_FENCE_LANGS})\\b[^\\n]*$`,
+		"gim"
+	);
+	return md
+		.replace(fenceOpen, "$1text")
+		.replace(/!\[\[/g, "!\\[\\[");
+}
+
+/** Shift every Markdown heading down by `by` levels (capped at h6). */
+export function demoteMarkdownHeadings(md: string, by = 3): string {
+	return md.replace(/^(#{1,6})(\s)/gm, (_m, hashes: string, space: string) => {
+		return "#".repeat(Math.min(6, hashes.length + by)) + space;
+	});
+}
+
 /** The note-taking rule embedded in cards, prompts and agent instructions. */
 export const NOTE_TAKING_LINE =
 	"Always take concise notes of what you do, so we have an efficient and reliable code history memory.";

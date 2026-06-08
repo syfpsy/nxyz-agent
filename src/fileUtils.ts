@@ -181,6 +181,31 @@ export async function collectBacklinks(
 	return out;
 }
 
+/** Copy text to the clipboard, falling back to Electron on desktop. */
+export async function copyToClipboard(text: string): Promise<boolean> {
+	try {
+		await navigator.clipboard.writeText(text);
+		return true;
+	} catch {
+		try {
+			const electron = (
+				window as unknown as {
+					require?: (m: string) => {
+						clipboard?: { writeText(t: string): void };
+					};
+				}
+			).require?.("electron");
+			if (electron?.clipboard?.writeText) {
+				electron.clipboard.writeText(text);
+				return true;
+			}
+		} catch {
+			// fall through
+		}
+		return false;
+	}
+}
+
 /** Hard-cut text at a character limit, appending a marker when truncated. */
 export function truncateToLimit(
 	text: string,

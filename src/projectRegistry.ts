@@ -121,6 +121,20 @@ export async function createProjectCard(
 	return { file, created, slug };
 }
 
+/** Append a dated entry to a project's work log, addressed by slug. */
+export async function appendWorkLogEntry(
+	app: App,
+	settings: NxyzAgentSettings,
+	slug: string,
+	entry: string
+): Promise<TFile> {
+	const path = normalizePath(`${settings.workLogFolder}/${slug}/log.md`);
+	const header = `# Work Log — ${slug}\n`;
+	const body = workLogEntryTemplate(getCurrentDateTimeString(), entry);
+	const { file } = await appendToFile(app, path, body, header);
+	return file;
+}
+
 /** Append a dated entry to the project's work log. */
 export async function appendWorkLog(
 	app: App,
@@ -128,13 +142,7 @@ export async function appendWorkLog(
 	project: ResolvedProject,
 	entry: string
 ): Promise<TFile> {
-	const path = normalizePath(
-		`${settings.workLogFolder}/${project.slug}/log.md`
-	);
-	const header = `# Work Log — ${project.slug}\n`;
-	const body = workLogEntryTemplate(getCurrentDateTimeString(), entry);
-	const { file } = await appendToFile(app, path, body, header);
-	return file;
+	return appendWorkLogEntry(app, settings, project.slug, entry);
 }
 
 /** Create a build note from an existing note's content. Never overwrites. */

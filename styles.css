@@ -169,6 +169,57 @@ Obsidian-native variables are used so the plugin respects the active theme.
 	word-break: break-word;
 }
 
+/* Markdown-rendered replies should not keep the pre-wrap whitespace on flow
+   elements — but code blocks must preserve their own whitespace. */
+.nxyz-chat-content :is(p, ul, ol, h1, h2, h3, h4, blockquote) {
+	white-space: normal;
+}
+
+.nxyz-chat-content pre {
+	white-space: pre;
+	overflow-x: auto;
+}
+
+.nxyz-chat-content > :first-child {
+	margin-top: 0;
+}
+
+.nxyz-chat-content > :last-child {
+	margin-bottom: 0;
+}
+
+.nxyz-chat-actions {
+	display: flex;
+	gap: var(--size-2-2);
+	margin-top: var(--size-2-2);
+	transition: opacity 120ms ease;
+}
+
+/* Hover-hide only where hover exists (desktop); always visible on touch. */
+@media (hover: hover) {
+	.nxyz-chat-actions {
+		opacity: 0;
+	}
+	.nxyz-chat-msg:hover .nxyz-chat-actions,
+	.nxyz-chat-msg:focus-within .nxyz-chat-actions {
+		opacity: 1;
+	}
+}
+
+.nxyz-chat-action {
+	font-size: var(--font-ui-smaller);
+	padding: var(--size-2-1) var(--size-2-3);
+	cursor: pointer;
+	color: var(--text-muted);
+	background: transparent;
+	box-shadow: none;
+}
+
+.nxyz-chat-action:hover {
+	color: var(--text-normal);
+	background: var(--background-modifier-hover);
+}
+
 .nxyz-chat-thinking {
 	color: var(--text-muted);
 	font-size: var(--font-ui-smaller);

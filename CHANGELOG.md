@@ -18,6 +18,8 @@ All notable changes to **nxyz agent** are documented here. The format follows
   **Stream responses** setting (on by default).
 - **Per-project chat history** — conversations are saved per project (keyed by slug) in the plugin's
   `data.json` and restored when you reopen the chat or reload its context.
+- **Markdown-rendered chat replies** plus per-message **Copy** and **Save to log** actions (the latter
+  appends the reply to the project work log, with headings demoted so they don't shadow the log outline).
 - **Control panel** (right-sidebar `ItemView`): shows the current project + status, one-click buttons
   for all 7 actions, and a clickable list of project cards. Deterministic and local — no AI. Opened
   via the ribbon or the new **Open panel** command; it refreshes on context and registry changes.
@@ -36,9 +38,20 @@ All notable changes to **nxyz agent** are documented here. The format follows
   rewriting it as an open task. Keyword lines (TODO/FIXME/…) are still written as open.
 - Author/developer name set to `nxyz` in `manifest.json` and `package.json`.
 
+### Security
+- Model replies are sanitized before Markdown rendering: executable code fences
+  (`dataviewjs`/`dataview`/`js-engine`/`templater`/`meta-bind`…) are relabelled inert and `![[…]]`
+  transclusions are neutralized, so a reply can't run plugin code or inline arbitrary notes. Link
+  resolution is anchored to the project card rather than the vault root.
+
 ### Fixed
 - Symbol-only project / build-note names that slugify to an empty string now fall back to
   `untitled` / `build-note` instead of producing a hidden `.md` file.
+- Chat: abort the in-flight request on panel close; don't re-render after unload; protect the
+  conversation from being lost or mis-persisted if context is reloaded/cleared mid-stream; no
+  message actions on the still-streaming placeholder.
+- Chat CSS: code blocks preserve their whitespace (no longer collapsed to one line); Copy / Save
+  actions are reachable on touch devices (not hover-only).
 
 ### Internal
 - Removed an unused `asFile` helper from `fileUtils.ts`.

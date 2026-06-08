@@ -12,6 +12,10 @@ import {
 	extractDecisionsFromContent,
 	extractTasksFromContent,
 } from "../src/projectRegistry";
+import {
+	demoteMarkdownHeadings,
+	sanitizeReplyMarkdown,
+} from "../src/templates";
 
 test("slugifyProjectName: spaces, casing, punctuation", () => {
 	assert.equal(slugifyProjectName("My Project"), "my-project");
@@ -118,6 +122,37 @@ test("extractDecisionsFromContent: matches decision keywords", () => {
 
 test("extractDecisionsFromContent: empty when nothing matches", () => {
 	assert.deepEqual(extractDecisionsFromContent("no relevant content here"), []);
+});
+
+test("sanitizeReplyMarkdown: neutralizes executable code fences", () => {
+	const out = sanitizeReplyMarkdown(
+		["```dataviewjs", "app.vault.delete(x)", "```"].join("\n")
+	);
+	assert.ok(out.startsWith("```text"), `expected inert fence, got: ${out}`);
+	assert.ok(!/```dataviewjs/.test(out));
+});
+
+test("sanitizeReplyMarkdown: handles dataview and js-engine, leaves plain code", () => {
+	assert.ok(sanitizeReplyMarkdown("```dataview\nLIST\n```").startsWith("```text"));
+	assert.ok(sanitizeReplyMarkdown("```js-engine\nx\n```").startsWith("```text"));
+	// A normal, non-executable code fence is left untouched.
+	assert.equal(
+		sanitizeReplyMarkdown("```ts\nconst a = 1;\n```"),
+		"```ts\nconst a = 1;\n```"
+	);
+});
+
+test("sanitizeReplyMarkdown: neutralizes transclusion embeds, keeps links", () => {
+	assert.equal(sanitizeReplyMarkdown("see ![[Secret Note]]"), "see !\\[\\[Secret Note]]");
+	assert.equal(sanitizeReplyMarkdown("see [[Other Note]]"), "see [[Other Note]]");
+});
+
+test("demoteMarkdownHeadings: shifts headings down, caps at h6", () => {
+	assert.equal(demoteMarkdownHeadings("## Summary"), "##### Summary");
+	assert.equal(demoteMarkdownHeadings("#### Deep"), "###### Deep");
+	assert.equal(demoteMarkdownHeadings("###### Already"), "###### Already");
+	// Non-heading lines and hashtags mid-line are untouched.
+	assert.equal(demoteMarkdownHeadings("not #a heading"), "not #a heading");
 });
 
 test("date helpers format the local date and time", () => {

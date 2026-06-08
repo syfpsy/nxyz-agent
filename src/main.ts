@@ -9,6 +9,7 @@ import { NxyzAgentSettingTab } from "./settings";
 import { NXYZ_VIEW_TYPE, NxyzAgentView } from "./view";
 import { NXYZ_CHAT_VIEW_TYPE, NxyzAgentChatView } from "./chatView";
 import {
+	copyToClipboard,
 	createFileIfMissing,
 	getCurrentDateTimeString,
 	getFrontmatter,
@@ -32,27 +33,6 @@ import {
 	saveContextPack,
 } from "./contextPack";
 import { promptForText } from "./modals";
-
-/** Copy text to the clipboard, falling back to Electron on desktop. */
-async function copyToClipboard(text: string): Promise<boolean> {
-	try {
-		await navigator.clipboard.writeText(text);
-		return true;
-	} catch {
-		try {
-			const electron = (window as unknown as {
-				require?: (m: string) => { clipboard?: { writeText(t: string): void } };
-			}).require?.("electron");
-			if (electron?.clipboard?.writeText) {
-				electron.clipboard.writeText(text);
-				return true;
-			}
-		} catch {
-			// fall through
-		}
-		return false;
-	}
-}
 
 export default class NxyzAgentPlugin extends Plugin {
 	settings!: NxyzAgentSettings;
