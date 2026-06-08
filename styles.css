@@ -226,6 +226,23 @@ Obsidian-native variables are used so the plugin respects the active theme.
 	font-style: italic;
 }
 
+.nxyz-chat-quick {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--size-2-2);
+}
+
+.nxyz-chat-quick-btn {
+	font-size: var(--font-ui-smaller);
+	padding: var(--size-2-1) var(--size-2-3);
+	cursor: pointer;
+	color: var(--text-muted);
+}
+
+.nxyz-chat-quick-btn:hover:not(:disabled) {
+	color: var(--text-normal);
+}
+
 .nxyz-chat-input-row {
 	display: flex;
 	gap: var(--size-2-2);

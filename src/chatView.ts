@@ -32,6 +32,20 @@ export const NXYZ_CHAT_VIEW_TYPE = "nxyz-agent-chat-view";
 
 const GENERAL_KEY = "_general";
 
+/** One-click prompts grounded in the current note/project context. */
+const QUICK_PROMPTS: ReadonlyArray<readonly [string, string]> = [
+	["Summarize", "Summarize the current context (note/project) in 5 concise bullet points."],
+	[
+		"Next step",
+		"What is the single smallest useful next step here? Be specific and concrete.",
+	],
+	[
+		"Tasks",
+		"List the concrete open tasks or TODOs implied by this context as a Markdown checklist.",
+	],
+	["Risks", "What are the main risks, gaps, or unknowns in the current context?"],
+];
+
 /**
  * AI chat panel. The current project's handoff prompt (constraints + condensed
  * context) is sent as the system message, so the model answers grounded in the
@@ -61,6 +75,7 @@ export class NxyzAgentChatView extends ItemView {
 	private sendBtn!: HTMLButtonElement;
 	private reloadBtn!: HTMLButtonElement;
 	private clearBtn!: HTMLButtonElement;
+	private quickBtns: HTMLButtonElement[] = [];
 
 	constructor(leaf: WorkspaceLeaf, private readonly plugin: NxyzAgentPlugin) {
 		super(leaf);
@@ -190,6 +205,16 @@ export class NxyzAgentChatView extends ItemView {
 		this.clearBtn.addEventListener("click", () => void this.clear());
 
 		this.logEl = root.createDiv({ cls: "nxyz-chat-log" });
+
+		const quick = root.createDiv({ cls: "nxyz-chat-quick" });
+		this.quickBtns = QUICK_PROMPTS.map(([label, prompt]) => {
+			const b = quick.createEl("button", {
+				cls: "nxyz-chat-quick-btn",
+				text: label,
+			});
+			b.addEventListener("click", () => void this.send(prompt));
+			return b;
+		});
 
 		const inputRow = root.createDiv({ cls: "nxyz-chat-input-row" });
 		this.inputEl = inputRow.createEl("textarea", { cls: "nxyz-chat-input" });
@@ -322,6 +347,7 @@ export class NxyzAgentChatView extends ItemView {
 		// Prevent swapping the conversation out from under an in-flight request.
 		this.reloadBtn.disabled = sending;
 		this.clearBtn.disabled = sending;
+		this.quickBtns.forEach((b) => (b.disabled = sending));
 	}
 
 	private async clear(): Promise<void> {
@@ -331,13 +357,13 @@ export class NxyzAgentChatView extends ItemView {
 		this.renderMessages();
 	}
 
-	private async send(): Promise<void> {
+	private async send(preset?: string): Promise<void> {
 		// A second click while streaming acts as Stop.
 		if (this.sending) {
 			this.abortController?.abort();
 			return;
 		}
-		const text = this.inputEl.value.trim();
+		const text = (preset ?? this.inputEl.value).trim();
 		if (text === "") return;
 
 		// Re-read the open note so the reply reflects the current document.
@@ -355,7 +381,7 @@ export class NxyzAgentChatView extends ItemView {
 		const conversation = this.messages;
 
 		conversation.push({ role: "user", content: text });
-		this.inputEl.value = "";
+		if (preset === undefined) this.inputEl.value = "";
 		this.setSending(true);
 		this.renderMessages();
 
