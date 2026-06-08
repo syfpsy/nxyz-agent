@@ -61,6 +61,16 @@ Obsidian-native variables are used so the plugin respects the active theme.
 	word-break: break-word;
 }
 
+.nxyz-view-project-age {
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+	margin-top: var(--size-2-1);
+}
+
+.nxyz-view-project-age.is-stale {
+	color: var(--text-warning);
+}
+
 .nxyz-view-actions {
 	display: flex;
 	flex-direction: column;
@@ -314,6 +324,17 @@ Obsidian-native variables are used so the plugin respects the active theme.
 	max-height: 10em;
 	resize: vertical;
 	font-family: inherit;
+}
+
+.nxyz-compose-preset-row {
+	display: flex;
+	align-items: center;
+	gap: var(--size-2-2);
+}
+
+.nxyz-compose-preset {
+	font-size: var(--font-ui-smaller);
+	max-width: 14em;
 }
 
 .nxyz-compose-actions {

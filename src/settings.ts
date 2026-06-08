@@ -173,9 +173,11 @@ export class NxyzAgentSettingTab extends PluginSettingTab {
 			get: () => string,
 			set: (v: string) => void
 		): void => {
+			const isSet = get().trim().length > 0;
+			const fullDesc = isSet ? `${desc} ✓ Key is set.` : desc;
 			new Setting(containerEl)
 				.setName(name)
-				.setDesc(desc)
+				.setDesc(fullDesc)
 				.addText((t) => {
 					t.inputEl.type = "password";
 					t.setPlaceholder("sk-…")

@@ -41,6 +41,45 @@ import {
 
 export const NXYZ_COMPOSE_VIEW_TYPE = "nxyz-agent-compose-view";
 
+/** One-click instruction starters for common page types. */
+const COMPOSE_PRESETS: ReadonlyArray<{ label: string; instruction: string }> = [
+	{
+		label: "Meeting notes",
+		instruction:
+			"Write a complete meeting notes page. Include sections: Date & Attendees, Agenda, Key Discussion Points, Decisions Made, and Action Items (with owners and due dates). Use task-list checkboxes for action items.",
+	},
+	{
+		label: "Design document",
+		instruction:
+			"Write a technical design document. Include sections: Problem Statement, Goals, Non-Goals, Proposed Solution, Architecture (with a Mermaid diagram if helpful), Trade-offs, Alternatives Considered, Risks, and Implementation Plan.",
+	},
+	{
+		label: "Sprint retrospective",
+		instruction:
+			"Write a sprint retrospective page. Include sections: What Went Well, What Could Be Improved, Root Causes, Action Items for Next Sprint (checkboxes), and a brief Team Metrics summary.",
+	},
+	{
+		label: "Project brief",
+		instruction:
+			"Write a project brief. Include sections: Background & Context, Objectives, Scope (In Scope / Out of Scope), Success Metrics, Timeline, Stakeholders, and Open Questions.",
+	},
+	{
+		label: "Blog post",
+		instruction:
+			"Write a structured blog post. Include a compelling title, an introduction hook, 3–5 main sections with examples or callouts for key points, a conclusion, and a call-to-action.",
+	},
+	{
+		label: "README",
+		instruction:
+			"Write a README for a software project. Include sections: Project name & one-line description, Features, Prerequisites, Installation (code blocks), Usage with examples, Configuration, Contributing, and License.",
+	},
+	{
+		label: "Daily note",
+		instruction:
+			"Write a structured daily note template. Include sections: Today's Focus (top 3 priorities as checkboxes), Schedule / Time blocks, Notes & Observations, Wins, Blockers, and Tomorrow's Top Task.",
+	},
+];
+
 /** Community plugins whose authoring syntax the model may use, if installed. */
 const KNOWN_PLUGINS: ReadonlyArray<readonly [string, string]> = [
 	["dataview", "Dataview (```dataview DQL / ```dataviewjs)"],
@@ -72,6 +111,7 @@ export class NxyzAgentComposeView extends ItemView {
 
 	private instructionEl!: HTMLTextAreaElement;
 	private modeEl!: HTMLSelectElement;
+	private presetEl!: HTMLSelectElement;
 	private genBtn!: HTMLButtonElement;
 	private loadNoteBtn!: HTMLButtonElement;
 	private sourceEl!: HTMLTextAreaElement;
@@ -190,6 +230,24 @@ export class NxyzAgentComposeView extends ItemView {
 			if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
 				e.preventDefault();
 				void this.generate();
+			}
+		});
+
+		// Preset selector — fills the instruction textarea with a starter prompt.
+		const presetRow = bar.createDiv({ cls: "nxyz-compose-preset-row" });
+		this.presetEl = presetRow.createEl("select", {
+			cls: "nxyz-compose-preset dropdown",
+		});
+		this.presetEl.createEl("option", { value: "", text: "— Presets —" });
+		for (const p of COMPOSE_PRESETS) {
+			this.presetEl.createEl("option", { value: p.instruction, text: p.label });
+		}
+		this.presetEl.addEventListener("change", () => {
+			const val = this.presetEl.value;
+			if (val) {
+				this.instructionEl.value = val;
+				this.instructionEl.focus();
+				this.presetEl.value = ""; // reset so it can be reselected
 			}
 		});
 
@@ -345,6 +403,7 @@ export class NxyzAgentComposeView extends ItemView {
 		this.genBtn.toggleClass("mod-warning", generating && cancellable);
 		this.genBtn.disabled = generating && !cancellable;
 		this.modeEl.disabled = generating;
+		this.presetEl.disabled = generating;
 		this.loadNoteBtn.disabled = generating;
 		this.applyBtn.disabled = generating;
 		this.copyBtn.disabled = generating;

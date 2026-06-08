@@ -1,4 +1,23 @@
 import { ItemView, WorkspaceLeaf, normalizePath } from "obsidian";
+
+/** Format the age of a YYYY-MM-DD date string relative to now. Returns null for invalid dates. */
+function reviewAge(dateStr: unknown): { text: string; stale: boolean } | null {
+	if (typeof dateStr !== "string" || !dateStr.trim()) return null;
+	const d = new Date(dateStr);
+	if (isNaN(d.getTime())) return null;
+	const days = Math.floor((Date.now() - d.getTime()) / 86_400_000);
+	if (days < 0) return null; // future date — ignore
+	if (days === 0) return { text: "reviewed today", stale: false };
+	if (days === 1) return { text: "1 day ago", stale: false };
+	if (days < 7) return { text: `${days} days ago`, stale: false };
+	if (days < 14) return { text: "1 week ago", stale: false };
+	if (days < 30) return { text: `${Math.floor(days / 7)} weeks ago`, stale: false };
+	const months = Math.floor(days / 30);
+	return {
+		text: months === 1 ? "1 month ago" : `${months} months ago`,
+		stale: true,
+	};
+}
 import type NxyzAgentPlugin from "./main";
 import {
 	listProjectCards,
@@ -109,6 +128,15 @@ export class NxyzAgentView extends ItemView {
 					cls: "nxyz-view-project-meta",
 					text: metaLines.join(" · "),
 				});
+			}
+			// Last-reviewed age.
+			const age = reviewAge(current.meta.last_reviewed);
+			if (age) {
+				const ageEl = box.createEl("div", {
+					cls: "nxyz-view-project-age",
+					text: `last reviewed: ${age.text}`,
+				});
+				if (age.stale) ageEl.addClass("is-stale");
 			}
 		} else {
 			box.createEl("div", {

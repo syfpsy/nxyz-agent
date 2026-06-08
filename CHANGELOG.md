@@ -6,6 +6,14 @@ All notable changes to **nxyz agent** are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- **Compose: 7 instruction presets** — a "— Presets —" dropdown fills the instruction field with a
+  ready-to-edit starter for common page types: Meeting notes, Design document, Sprint retrospective,
+  Project brief, Blog post, README, Daily note. The preset resets after selection so it can be
+  reused.
+- **Control panel: last-reviewed age** — shows "last reviewed: N days/weeks/months ago" for the
+  current project, derived from `last_reviewed` frontmatter. Turns warning-colored after 30 days.
+- **Settings: key-set indicator** — the description of each API key field now shows "✓ Key is set."
+  when a key is already saved, so you can see at a glance which providers are wired up.
 - **Compose: "Load active note" button** — populates the source pane with the active note's content
   in one click, without touching the AI. Useful for manual editing or to include the note in an
   instruction (e.g. "clean up the grammar in this page").
@@ -23,9 +31,22 @@ All notable changes to **nxyz agent** are documented here. The format follows
 - `saveContextPack` datetime stamps now strip spaces as well as colons (the file was named
   `my-project-2026-06-08 14-30.md`; now correctly `my-project-2026-06-08-14-30.md`).
 
+### Added (batch 3)
+- **Chat: Export conversation** — "Export" button saves the full chat as a Markdown file in the
+  project work-log folder (`chat-export-<stamp>.md`), then opens it.
+- **Chat: no-key hint** — the empty-state message now includes a "Open settings" link when no API
+  key is configured for the active provider.
+- **Chat: auto-grow input** — the input textarea expands as you type (capped by CSS `max-height`).
+- **Chat/Compose: Ctrl+Enter** — Ctrl+Enter (Cmd+Enter on Mac) sends a chat message or triggers
+  Compose generation from the instruction field.
+- **Compose: word count** — the footer now shows `N chars · N words` (alongside the char count).
+- **Control panel: extra project meta** — repo, domain, and stack from the card frontmatter are
+  shown below the project status when present.
+
 ### Internal
 - `extractFirstHeading` helper in `templates.ts`; `initialValue` option in `promptForText`.
 - Temperature is threaded through `streamOrComplete` opts instead of being a separate argument.
+- Chat imports `createFileIfMissing`, `getCurrentDateTimeString`, `openFile` for conversation export.
 
 ---
 
