@@ -309,6 +309,15 @@ test("lineDiff: pure append adds only the new lines", () => {
 	assert.deepEqual(diffStats(diff!), { added: 2, removed: 0 });
 });
 
+test("markProjectReviewed frontmatter regex: replaces last_reviewed in-place", () => {
+	// Validate the core regex used by markProjectReviewed, without the Obsidian API.
+	const replace = (content: string, date: string): string =>
+		content.replace(/^(last_reviewed:\s*).*$/m, `$1${date}`);
+	const card = `---\ntype: project\nlast_reviewed: 2024-01-01\n---\n# My Project\n`;
+	assert.ok(replace(card, "2026-06-08").includes("last_reviewed: 2026-06-08"));
+	assert.ok(!replace(card, "2026-06-08").includes("2024-01-01"));
+});
+
 test("DEFAULT_SETTINGS: temperature is 0.3 and aiStream is true", () => {
 	assert.equal(DEFAULT_SETTINGS.aiTemperature, 0.3);
 	assert.equal(DEFAULT_SETTINGS.aiStream, true);

@@ -6,6 +6,7 @@ import {
 	getCurrentDateString,
 	getCurrentDateTimeString,
 	getFrontmatter,
+	overwriteFile,
 	slugifyProjectName,
 } from "./fileUtils";
 import {
@@ -244,6 +245,42 @@ export function extractTasksFromContent(content: string): ExtractedTask[] {
 		out.push({ text, done });
 	}
 	return out;
+}
+
+/**
+ * Update (or insert) the `last_reviewed` field in a project card's frontmatter
+ * to the given date string (YYYY-MM-DD). If the field already exists it is
+ * replaced in-place; if the card has a frontmatter block but no field, the
+ * field is appended before the closing `---`.
+ *
+ * This is the only project operation that modifies an existing user file — callers
+ * must present appropriate UI (button + confirmation is sufficient here since the
+ * change is non-destructive and reversible via File Recovery).
+ */
+export async function markProjectReviewed(
+	app: App,
+	file: TFile,
+	date: string
+): Promise<void> {
+	const content = await app.vault.read(file);
+	let updated: string;
+
+	if (/^last_reviewed:/m.test(content)) {
+		// Replace the existing field value.
+		updated = content.replace(/^(last_reviewed:\s*).*$/m, `$1${date}`);
+	} else {
+		// Insert before the closing --- of the frontmatter block (must be line 2+).
+		const fmEnd = content.indexOf("\n---", 3);
+		if (fmEnd === -1) {
+			throw new Error("No frontmatter block found — cannot add last_reviewed.");
+		}
+		updated =
+			content.slice(0, fmEnd) +
+			`\nlast_reviewed: ${date}` +
+			content.slice(fmEnd);
+	}
+
+	await overwriteFile(app, file, updated);
 }
 
 const DECISION_KEYWORDS =

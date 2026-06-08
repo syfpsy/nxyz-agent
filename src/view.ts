@@ -23,7 +23,7 @@ import {
 	listProjectCards,
 	resolveProjectNonInteractive,
 } from "./projectRegistry";
-import { openFile } from "./fileUtils";
+import { getFrontmatter, openFile } from "./fileUtils";
 
 export const NXYZ_VIEW_TYPE = "nxyz-agent-view";
 
@@ -129,15 +129,24 @@ export class NxyzAgentView extends ItemView {
 					text: metaLines.join(" · "),
 				});
 			}
-			// Last-reviewed age.
+			// Last-reviewed age + "mark reviewed" button.
+			const ageRow = box.createDiv({ cls: "nxyz-view-project-age-row" });
 			const age = reviewAge(current.meta.last_reviewed);
 			if (age) {
-				const ageEl = box.createEl("div", {
+				const ageEl = ageRow.createSpan({
 					cls: "nxyz-view-project-age",
 					text: `last reviewed: ${age.text}`,
 				});
 				if (age.stale) ageEl.addClass("is-stale");
 			}
+			const markBtn = ageRow.createEl("button", {
+				cls: "nxyz-view-mark-reviewed",
+				text: age ? "Mark reviewed" : "Mark reviewed today",
+			});
+			markBtn.title = "Stamp last_reviewed in the card frontmatter to today.";
+			markBtn.addEventListener("click", () =>
+				this.runAndRefresh(() => plugin.markReviewed(current))
+			);
 		} else {
 			box.createEl("div", {
 				cls: "nxyz-view-project-empty",
@@ -178,13 +187,16 @@ export class NxyzAgentView extends ItemView {
 			return;
 		}
 		for (const card of cards) {
-			const item = list.createEl("div", {
-				cls: "nxyz-view-item",
-				text: card.basename,
-			});
+			const item = list.createEl("div", { cls: "nxyz-view-item" });
 			if (current && current.file.path === card.path) {
 				item.addClass("is-active");
 			}
+			// Status dot (read from metadata cache — fast, no async).
+			const status = (getFrontmatter(this.app, card)?.status as string) ?? "";
+			const dot = item.createSpan({ cls: "nxyz-view-status-dot" });
+			if (status) dot.addClass(`is-${status}`);
+			dot.title = status || "unknown";
+			item.createSpan({ text: card.basename });
 			item.addEventListener("click", () => {
 				void openFile(this.app, card);
 			});

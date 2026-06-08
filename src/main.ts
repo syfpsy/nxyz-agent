@@ -14,6 +14,7 @@ import {
 	copyToClipboard,
 	createFileIfMissing,
 	errorMessage,
+	getCurrentDateString,
 	getCurrentDateTimeString,
 	getFrontmatter,
 	openFile,
@@ -27,6 +28,7 @@ import {
 	createProjectCard,
 	extractDecisionsFromContent,
 	extractTasksFromContent,
+	markProjectReviewed,
 	resolveCurrentProject,
 } from "./projectRegistry";
 import {
@@ -387,6 +389,20 @@ export default class NxyzAgentPlugin extends Plugin {
 			new Notice(`Appended ${count} task${count === 1 ? "" : "s"}.`);
 		} catch (e) {
 			new Notice(`Could not extract tasks: ${errorMessage(e)}`);
+		}
+	}
+
+	// --- Mark reviewed today -----------------------------------------------
+	async markReviewed(project: ResolvedProject): Promise<void> {
+		try {
+			await markProjectReviewed(
+				this.app,
+				project.file,
+				getCurrentDateString()
+			);
+			new Notice(`Marked "${project.name}" as reviewed today.`);
+		} catch (e) {
+			new Notice(`Could not update last_reviewed: ${errorMessage(e)}`);
 		}
 	}
 

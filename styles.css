@@ -61,15 +61,52 @@ Obsidian-native variables are used so the plugin respects the active theme.
 	word-break: break-word;
 }
 
+.nxyz-view-project-age-row {
+	display: flex;
+	align-items: center;
+	gap: var(--size-2-2);
+	margin-top: var(--size-2-1);
+	flex-wrap: wrap;
+}
+
 .nxyz-view-project-age {
 	color: var(--text-muted);
 	font-size: var(--font-ui-smaller);
-	margin-top: var(--size-2-1);
 }
 
 .nxyz-view-project-age.is-stale {
 	color: var(--text-warning);
 }
+
+.nxyz-view-mark-reviewed {
+	font-size: var(--font-ui-smaller);
+	padding: 1px var(--size-2-2);
+	cursor: pointer;
+	color: var(--text-muted);
+}
+
+.nxyz-view-mark-reviewed:hover {
+	color: var(--text-normal);
+}
+
+/* Status dots in the project list */
+.nxyz-view-status-dot {
+	display: inline-block;
+	width: 7px;
+	height: 7px;
+	border-radius: 50%;
+	background: var(--text-faint);
+	flex-shrink: 0;
+	margin-right: var(--size-2-1);
+	vertical-align: middle;
+	position: relative;
+	top: -1px;
+}
+
+.nxyz-view-status-dot.is-active   { background: var(--color-green); }
+.nxyz-view-status-dot.is-paused   { background: var(--color-orange); }
+.nxyz-view-status-dot.is-done     { background: var(--color-blue); }
+.nxyz-view-status-dot.is-archived { background: var(--text-faint); }
 
 .nxyz-view-actions {
 	display: flex;

@@ -8,7 +8,9 @@ import {
 import type NxyzAgentPlugin from "./main";
 import type { ChatMessage, ResolvedProject } from "./types";
 import {
+	appendTasks,
 	appendWorkLogEntry,
+	extractTasksFromContent,
 	resolveProjectNonInteractive,
 } from "./projectRegistry";
 import {
@@ -327,13 +329,21 @@ export class NxyzAgentChatView extends ItemView {
 			const ok = await copyToClipboard(m.content);
 			new Notice(ok ? "Copied." : "Clipboard unavailable.");
 		});
-		// Saving to the work log only makes sense with a real project.
+		// Saving to the work log / extracting tasks only make sense with a project.
 		if (m.role === "assistant" && this.projectName) {
 			const save = actions.createEl("button", {
 				cls: "nxyz-chat-action",
 				text: "Save to log",
 			});
 			save.addEventListener("click", () => void this.saveToLog(m));
+
+			const addTasks = actions.createEl("button", {
+				cls: "nxyz-chat-action",
+				text: "Add tasks",
+			});
+			addTasks.title =
+				"Extract task-like lines from this reply and append them to the project TASKS.md.";
+			addTasks.addEventListener("click", () => void this.addMessageTasks(m));
 		}
 	}
 
@@ -351,6 +361,28 @@ export class NxyzAgentChatView extends ItemView {
 			new Notice(
 				`Could not save: ${e instanceof Error ? e.message : String(e)}`
 			);
+		}
+	}
+
+	/** Extract task lines from a reply and append them to the project TASKS.md. */
+	private async addMessageTasks(m: ChatMessage): Promise<void> {
+		if (!this.boundProject) return;
+		const tasks = extractTasksFromContent(m.content);
+		if (tasks.length === 0) {
+			new Notice("No task-like lines found in this reply.");
+			return;
+		}
+		try {
+			const count = await appendTasks(
+				this.app,
+				this.plugin.settings,
+				this.boundProject,
+				tasks,
+				"AI chat"
+			);
+			new Notice(`Appended ${count} task${count === 1 ? "" : "s"} to TASKS.md.`);
+		} catch (e) {
+			new Notice(`Could not add tasks: ${errorMessage(e)}`);
 		}
 	}
 

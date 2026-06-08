@@ -31,6 +31,16 @@ All notable changes to **nxyz agent** are documented here. The format follows
 - `saveContextPack` datetime stamps now strip spaces as well as colons (the file was named
   `my-project-2026-06-08 14-30.md`; now correctly `my-project-2026-06-08-14-30.md`).
 
+### Added (batch 5)
+- **Control panel: "Mark reviewed today" button** — stamps `last_reviewed` to today's date in the
+  project card frontmatter with one click (updates or inserts the field). The stale-indicator added
+  in the previous batch now has a matching reset action.
+- **Control panel: project list status dots** — a coloured dot (green = active, orange = paused,
+  blue = done, gray = archived/unknown) appears before each project name in the card list.
+- **Chat: "Add tasks" per-message action** — a third action button on assistant replies (alongside
+  Copy and Save to log) runs `extractTasksFromContent` on the reply and appends any found tasks to
+  the project `TASKS.md`. Requires a bound project.
+
 ### Added (batch 3)
 - **Chat: Export conversation** — "Export" button saves the full chat as a Markdown file in the
   project work-log folder (`chat-export-<stamp>.md`), then opens it.
