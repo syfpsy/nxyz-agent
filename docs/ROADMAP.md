@@ -20,8 +20,10 @@ scope and explicit non-goals.
   (`providers.ts`), an AI chat panel (`chatView.ts`) grounded in the current project's context,
   **streaming responses** with a non-streaming fallback, and **per-project chat history** persisted
   in `data.json`. Opt-in; nothing is sent unless a key is set and the chat is used.
-- Remaining: using `chatComplete` to optionally summarize context inside `condenseContext`; a
-  per-project model override; richer Markdown rendering of replies.
+- Also delivered: Markdown-rendered replies with Copy / Save-to-log actions, and a **per-project
+  provider/model override** via project-card frontmatter (`ai_provider` / `ai_model`).
+- Remaining: using `chatComplete` to optionally summarize context inside `condenseContext`;
+  conversation export; optional encryption of stored keys.
 
 **Non-goals:** autonomous agents, background calls, sending data anywhere without explicit opt-in.
 

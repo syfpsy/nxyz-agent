@@ -20,6 +20,9 @@ All notable changes to **nxyz agent** are documented here. The format follows
   `data.json` and restored when you reopen the chat or reload its context.
 - **Markdown-rendered chat replies** plus per-message **Copy** and **Save to log** actions (the latter
   appends the reply to the project work log, with headings demoted so they don't shadow the log outline).
+- **Per-project AI override** — a project card's frontmatter may set `ai_provider:` and/or `ai_model:`
+  to override the global provider/model for that project's chat. The chat header shows the effective
+  provider · model; invalid provider values fall back to the global setting.
 - **Control panel** (right-sidebar `ItemView`): shows the current project + status, one-click buttons
   for all 7 actions, and a clickable list of project cards. Deterministic and local — no AI. Opened
   via the ribbon or the new **Open panel** command; it refreshes on context and registry changes.

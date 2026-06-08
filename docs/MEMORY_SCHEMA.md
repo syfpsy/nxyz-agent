@@ -55,6 +55,14 @@ Always take concise notes of what you do, so we have an efficient and reliable c
 `type: project` is what `resolveCurrentProject` keys on. Created only if missing — an existing card is
 opened, never overwritten.
 
+Optional AI overrides may be added to a card's frontmatter to make the chat use a different
+provider/model for that project (otherwise the global settings apply):
+
+```yaml
+ai_provider: openrouter        # deepseek | openrouter | openai (invalid values ignored)
+ai_model: anthropic/claude-3.5-sonnet
+```
+
 ## Context pack
 
 ```markdown

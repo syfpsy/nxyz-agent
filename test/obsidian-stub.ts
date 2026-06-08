@@ -15,6 +15,12 @@ export function normalizePath(path: string): string {
 		.replace(/^\/+|\/+$/g, "");
 }
 
+// Network helper — not exercised by the pure-logic tests, just needs to exist
+// so importing modules that reference it resolves.
+export async function requestUrl(): Promise<unknown> {
+	throw new Error("requestUrl is stubbed in tests");
+}
+
 export class App {}
 export class TAbstractFile {}
 export class TFile extends TAbstractFile {}

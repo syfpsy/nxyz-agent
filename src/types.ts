@@ -85,6 +85,9 @@ export interface ProjectCardMeta {
 	tags?: string[];
 	last_reviewed?: string;
 	agent_scope?: string;
+	/** Optional per-project AI overrides (fall back to global settings). */
+	ai_provider?: string;
+	ai_model?: string;
 	[key: string]: unknown;
 }
 

@@ -15,8 +15,10 @@ import { assembleContext, buildHandoffPrompt } from "./contextPack";
 import { copyToClipboard } from "./fileUtils";
 import { demoteMarkdownHeadings, sanitizeReplyMarkdown } from "./templates";
 import {
+	ProviderOverride,
 	chatComplete,
 	chatStream,
+	effectiveProviderModel,
 	providerLabel,
 	resolveProvider,
 } from "./providers";
@@ -38,6 +40,7 @@ export class NxyzAgentChatView extends ItemView {
 	private projectName: string | null = null;
 	private currentKey = GENERAL_KEY;
 	private sourcePath = "";
+	private override: ProviderOverride = {};
 	private sending = false;
 	private closed = false;
 	private abortController?: AbortController;
@@ -92,6 +95,10 @@ export class NxyzAgentChatView extends ItemView {
 			this.projectName = project.name;
 			this.currentKey = project.slug;
 			this.sourcePath = project.file.path;
+			this.override = {
+				provider: project.meta.ai_provider,
+				model: project.meta.ai_model,
+			};
 			try {
 				const assembly = await assembleContext(
 					this.app,
@@ -109,6 +116,7 @@ export class NxyzAgentChatView extends ItemView {
 			this.projectName = null;
 			this.currentKey = GENERAL_KEY;
 			this.sourcePath = "";
+			this.override = {};
 			this.systemContext = "";
 		}
 		this.messages = this.plugin.getChat(this.currentKey).slice();
@@ -157,11 +165,15 @@ export class NxyzAgentChatView extends ItemView {
 
 	private updateContextLabel(): void {
 		if (!this.contextEl) return;
-		const provider = providerLabel(this.plugin.settings.aiProvider);
+		const { provider, model } = effectiveProviderModel(
+			this.plugin.settings,
+			this.override
+		);
+		const label = `${providerLabel(provider)} · ${model}`;
 		this.contextEl.setText(
 			this.projectName
-				? `Context: ${this.projectName} · ${provider}`
-				: `No project context · ${provider}`
+				? `Context: ${this.projectName} · ${label}`
+				: `No project context · ${label}`
 		);
 	}
 
@@ -275,7 +287,7 @@ export class NxyzAgentChatView extends ItemView {
 		const text = this.inputEl.value.trim();
 		if (text === "") return;
 
-		const resolved = resolveProvider(this.plugin.settings);
+		const resolved = resolveProvider(this.plugin.settings, this.override);
 		if (!resolved.ok) {
 			new Notice(resolved.error);
 			return;

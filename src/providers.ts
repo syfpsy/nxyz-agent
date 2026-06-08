@@ -29,25 +29,65 @@ export function providerLabel(provider: AiProvider): string {
 	return PROVIDER_META[provider].label;
 }
 
+/** Optional per-project overrides (from project-card frontmatter). */
+export interface ProviderOverride {
+	provider?: string;
+	model?: string;
+}
+
+/** Narrow an arbitrary string to a supported provider. */
+export function isAiProvider(value: unknown): value is AiProvider {
+	return value === "deepseek" || value === "openrouter" || value === "openai";
+}
+
+function defaultModelFor(
+	settings: NxyzAgentSettings,
+	provider: AiProvider
+): string {
+	return provider === "deepseek"
+		? settings.deepseekModel
+		: provider === "openrouter"
+			? settings.openrouterModel
+			: settings.openaiModel;
+}
+
+function keyFor(settings: NxyzAgentSettings, provider: AiProvider): string {
+	return provider === "deepseek"
+		? settings.deepseekApiKey
+		: provider === "openrouter"
+			? settings.openrouterApiKey
+			: settings.openaiApiKey;
+}
+
+/**
+ * The effective provider + model after applying an optional per-project
+ * override. A valid `override.provider` switches provider (and its default
+ * model); a non-empty `override.model` overrides the model. Invalid overrides
+ * are ignored. Does not check keys — safe for display.
+ */
+export function effectiveProviderModel(
+	settings: NxyzAgentSettings,
+	override?: ProviderOverride
+): { provider: AiProvider; model: string } {
+	const provider = isAiProvider(override?.provider)
+		? override.provider
+		: settings.aiProvider;
+	const overrideModel = override?.model?.trim();
+	const model = overrideModel || defaultModelFor(settings, provider);
+	return { provider, model };
+}
+
 type ResolveResult =
 	| { ok: true; config: ResolvedProvider }
 	| { ok: false; error: string };
 
-/** Resolve the active provider's base URL, key and model from settings. */
-export function resolveProvider(settings: NxyzAgentSettings): ResolveResult {
-	const provider = settings.aiProvider;
-	const key =
-		provider === "deepseek"
-			? settings.deepseekApiKey
-			: provider === "openrouter"
-				? settings.openrouterApiKey
-				: settings.openaiApiKey;
-	const model =
-		provider === "deepseek"
-			? settings.deepseekModel
-			: provider === "openrouter"
-				? settings.openrouterModel
-				: settings.openaiModel;
+/** Resolve the provider's base URL, key and model, applying any override. */
+export function resolveProvider(
+	settings: NxyzAgentSettings,
+	override?: ProviderOverride
+): ResolveResult {
+	const { provider, model } = effectiveProviderModel(settings, override);
+	const key = keyFor(settings, provider);
 
 	if (!key || key.trim() === "") {
 		return {

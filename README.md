@@ -98,6 +98,9 @@ condensed context) is sent as the system message.
 - Replies **stream** token-by-token (toggle in settings); a **Stop** button cancels a stream, and the
   client falls back to a single non-streamed response if streaming is blocked. Each project's
   conversation is **saved per project** and restored when you reopen the chat.
+- **Per-project override:** add `ai_provider:` and/or `ai_model:` to a project card's frontmatter to
+  make that project's chat use a different provider/model than the global default. The chat header
+  shows the effective provider · model.
 
 ## Privacy model
 

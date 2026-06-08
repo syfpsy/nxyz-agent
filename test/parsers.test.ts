@@ -16,6 +16,11 @@ import {
 	demoteMarkdownHeadings,
 	sanitizeReplyMarkdown,
 } from "../src/templates";
+import {
+	effectiveProviderModel,
+	isAiProvider,
+} from "../src/providers";
+import { DEFAULT_SETTINGS } from "../src/types";
 
 test("slugifyProjectName: spaces, casing, punctuation", () => {
 	assert.equal(slugifyProjectName("My Project"), "my-project");
@@ -153,6 +158,49 @@ test("demoteMarkdownHeadings: shifts headings down, caps at h6", () => {
 	assert.equal(demoteMarkdownHeadings("###### Already"), "###### Already");
 	// Non-heading lines and hashtags mid-line are untouched.
 	assert.equal(demoteMarkdownHeadings("not #a heading"), "not #a heading");
+});
+
+test("isAiProvider: only known providers pass", () => {
+	assert.equal(isAiProvider("deepseek"), true);
+	assert.equal(isAiProvider("openrouter"), true);
+	assert.equal(isAiProvider("openai"), true);
+	assert.equal(isAiProvider("gemini"), false);
+	assert.equal(isAiProvider(undefined), false);
+});
+
+test("effectiveProviderModel: per-project override precedence", () => {
+	const s = { ...DEFAULT_SETTINGS, aiProvider: "deepseek" } as typeof DEFAULT_SETTINGS;
+
+	// No override → global provider + its model.
+	assert.deepEqual(effectiveProviderModel(s), {
+		provider: "deepseek",
+		model: "deepseek-chat",
+	});
+	// Model-only override keeps the global provider.
+	assert.deepEqual(effectiveProviderModel(s, { model: "deepseek-reasoner" }), {
+		provider: "deepseek",
+		model: "deepseek-reasoner",
+	});
+	// Valid provider override switches provider and uses that provider's default model.
+	assert.deepEqual(effectiveProviderModel(s, { provider: "openai" }), {
+		provider: "openai",
+		model: "gpt-4o-mini",
+	});
+	// Provider + model override.
+	assert.deepEqual(
+		effectiveProviderModel(s, { provider: "openrouter", model: "anthropic/claude-3.5-sonnet" }),
+		{ provider: "openrouter", model: "anthropic/claude-3.5-sonnet" }
+	);
+	// Invalid provider override is ignored (falls back to global).
+	assert.deepEqual(effectiveProviderModel(s, { provider: "gemini" }), {
+		provider: "deepseek",
+		model: "deepseek-chat",
+	});
+	// Blank model override is ignored.
+	assert.deepEqual(effectiveProviderModel(s, { model: "  " }), {
+		provider: "deepseek",
+		model: "deepseek-chat",
+	});
 });
 
 test("date helpers format the local date and time", () => {
