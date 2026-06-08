@@ -14,7 +14,7 @@
 		"obsidian",
 		"obsidian-plugin"
 	],
-	"author": "Seyfi Cem Baskin",
+	"author": "nxyz",
 	"license": "MIT",
 	"devDependencies": {
 		"@types/node": "^22.15.17",

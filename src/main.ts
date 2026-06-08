@@ -1,5 +1,10 @@
 import { Notice, Plugin, TFile, WorkspaceLeaf, normalizePath } from "obsidian";
-import { DEFAULT_SETTINGS, NxyzAgentSettings, ResolvedProject } from "./types";
+import {
+	ChatMessage,
+	DEFAULT_SETTINGS,
+	NxyzAgentSettings,
+	ResolvedProject,
+} from "./types";
 import { NxyzAgentSettingTab } from "./settings";
 import { NXYZ_VIEW_TYPE, NxyzAgentView } from "./view";
 import { NXYZ_CHAT_VIEW_TYPE, NxyzAgentChatView } from "./chatView";
@@ -51,6 +56,7 @@ async function copyToClipboard(text: string): Promise<boolean> {
 
 export default class NxyzAgentPlugin extends Plugin {
 	settings!: NxyzAgentSettings;
+	private chats: Record<string, ChatMessage[]> = {};
 
 	async onload(): Promise<void> {
 		await this.loadSettings();
@@ -129,11 +135,42 @@ export default class NxyzAgentPlugin extends Plugin {
 	}
 
 	async loadSettings(): Promise<void> {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+		const data = (await this.loadData()) as unknown;
+		if (data && typeof data === "object" && "settings" in data) {
+			const d = data as {
+				settings?: Partial<NxyzAgentSettings>;
+				chats?: Record<string, ChatMessage[]>;
+			};
+			this.settings = Object.assign({}, DEFAULT_SETTINGS, d.settings);
+			this.chats = d.chats ?? {};
+		} else {
+			// Legacy flat format (settings stored at top level) or first run.
+			this.settings = Object.assign(
+				{},
+				DEFAULT_SETTINGS,
+				(data as Partial<NxyzAgentSettings>) ?? {}
+			);
+			this.chats = {};
+		}
 	}
 
 	async saveSettings(): Promise<void> {
-		await this.saveData(this.settings);
+		await this.persist();
+	}
+
+	private async persist(): Promise<void> {
+		await this.saveData({ settings: this.settings, chats: this.chats });
+	}
+
+	/** Per-project chat history (keyed by project slug, or "_general"). */
+	getChat(key: string): ChatMessage[] {
+		return this.chats[key] ?? [];
+	}
+
+	async setChat(key: string, messages: ChatMessage[]): Promise<void> {
+		// Cap stored history so data.json stays small.
+		this.chats[key] = messages.slice(-100);
+		await this.persist();
 	}
 
 	/** Open (or reveal) a sidebar view of the given type. */

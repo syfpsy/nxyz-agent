@@ -94,7 +94,10 @@ condensed context) is sent as the system message.
 - Providers: **DeepSeek**, **OpenRouter**, **OpenAI** (all OpenAI-compatible). Pick one and paste its
   key under **Settings → nxyz agent → AI (bring your own key)**, with an optional model override.
 - Keys are stored locally in the plugin's `data.json` and are sent only to the provider you select,
-  and only when you use the chat. Requests use Obsidian's `requestUrl` (no CORS; works on mobile).
+  and only when you use the chat.
+- Replies **stream** token-by-token (toggle in settings); a **Stop** button cancels a stream, and the
+  client falls back to a single non-streamed response if streaming is blocked. Each project's
+  conversation is **saved per project** and restored when you reopen the chat.
 
 ## Privacy model
 

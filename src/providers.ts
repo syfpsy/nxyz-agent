@@ -1,17 +1,15 @@
 import { requestUrl } from "obsidian";
-import type { AiProvider, NxyzAgentSettings } from "./types";
+import type { AiProvider, ChatMessage, NxyzAgentSettings } from "./types";
+
+export type { ChatMessage } from "./types";
 
 /**
  * Bring-your-own-key chat layer. DeepSeek, OpenRouter and OpenAI all expose the
  * same OpenAI-compatible `/chat/completions` endpoint, so a single client with
- * a configurable base URL + key + model covers all three. Requests go through
- * Obsidian's `requestUrl` to avoid CORS and work on mobile.
+ * a configurable base URL + key + model covers all three. Non-streaming calls
+ * use Obsidian's `requestUrl` (no CORS, mobile-safe); streaming uses `fetch`
+ * with Server-Sent Events and falls back to the non-streaming path on failure.
  */
-
-export interface ChatMessage {
-	role: "system" | "user" | "assistant";
-	content: string;
-}
 
 interface ResolvedProvider {
 	provider: AiProvider;
@@ -140,4 +138,77 @@ export async function chatComplete(
 		throw new Error(`${providerLabel(config.provider)} returned an empty response.`);
 	}
 	return content;
+}
+
+/**
+ * Stream a chat completion via Server-Sent Events, invoking `onDelta` for each
+ * token chunk. Returns the full text. Uses `fetch` (required for streaming);
+ * throws on transport/HTTP failure so callers can fall back to `chatComplete`.
+ */
+export async function chatStream(
+	config: ResolvedProvider,
+	messages: ChatMessage[],
+	onDelta: (text: string) => void,
+	signal?: AbortSignal,
+	temperature = 0.3
+): Promise<string> {
+	const res = await fetch(`${config.baseUrl}/chat/completions`, {
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+			Authorization: `Bearer ${config.apiKey}`,
+			...config.headers,
+		},
+		body: JSON.stringify({
+			model: config.model,
+			messages,
+			temperature,
+			stream: true,
+		}),
+		signal,
+	});
+
+	if (!res.ok || !res.body) {
+		const text = await res.text().catch(() => "");
+		throw new Error(
+			`${providerLabel(config.provider)} error ${res.status}: ${parseErrorMessage(text)}`
+		);
+	}
+
+	const reader = res.body.getReader();
+	const decoder = new TextDecoder();
+	let buffer = "";
+	let full = "";
+
+	for (;;) {
+		const { value, done } = await reader.read();
+		if (done) break;
+		buffer += decoder.decode(value, { stream: true });
+
+		const lines = buffer.split("\n");
+		buffer = lines.pop() ?? "";
+		for (const line of lines) {
+			const trimmed = line.trim();
+			if (!trimmed.startsWith("data:")) continue; // skip comments / blanks
+			const payload = trimmed.slice(5).trim();
+			if (payload === "" || payload === "[DONE]") continue;
+			try {
+				const json = JSON.parse(payload) as {
+					choices?: { delta?: { content?: unknown } }[];
+				};
+				const delta = json.choices?.[0]?.delta?.content;
+				if (typeof delta === "string" && delta.length > 0) {
+					full += delta;
+					onDelta(delta);
+				}
+			} catch {
+				// ignore partial / non-JSON keep-alive lines
+			}
+		}
+	}
+
+	if (full.trim() === "") {
+		throw new Error(`${providerLabel(config.provider)} returned an empty response.`);
+	}
+	return full;
 }

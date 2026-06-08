@@ -11,6 +11,12 @@ export type ProjectStatus = "active" | "paused" | "archived" | "done";
 /** Supported bring-your-own-key chat providers (all OpenAI-compatible). */
 export type AiProvider = "deepseek" | "openrouter" | "openai";
 
+/** A single chat turn (system messages are regenerated, not persisted). */
+export interface ChatMessage {
+	role: "system" | "user" | "assistant";
+	content: string;
+}
+
 export interface NxyzAgentSettings {
 	/** Folder that holds project cards. */
 	projectRegistryFolder: string;
@@ -42,6 +48,8 @@ export interface NxyzAgentSettings {
 	deepseekModel: string;
 	openrouterModel: string;
 	openaiModel: string;
+	/** Stream chat responses token-by-token (falls back to a single response). */
+	aiStream: boolean;
 }
 
 export const DEFAULT_SETTINGS: NxyzAgentSettings = {
@@ -61,6 +69,7 @@ export const DEFAULT_SETTINGS: NxyzAgentSettings = {
 	deepseekModel: "deepseek-chat",
 	openrouterModel: "openai/gpt-4o-mini",
 	openaiModel: "gpt-4o-mini",
+	aiStream: true,
 };
 
 /**

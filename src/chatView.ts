@@ -1,30 +1,37 @@
 import { ItemView, Notice, WorkspaceLeaf } from "obsidian";
 import type NxyzAgentPlugin from "./main";
+import type { ChatMessage } from "./types";
 import { resolveProjectNonInteractive } from "./projectRegistry";
 import { assembleContext, buildHandoffPrompt } from "./contextPack";
 import {
-	ChatMessage,
 	chatComplete,
+	chatStream,
 	providerLabel,
 	resolveProvider,
 } from "./providers";
 
 export const NXYZ_CHAT_VIEW_TYPE = "nxyz-agent-chat-view";
 
+const GENERAL_KEY = "_general";
+
 /**
  * AI chat panel. The current project's handoff prompt (constraints + condensed
  * context) is sent as the system message, so the model answers grounded in the
- * project. Bring-your-own-key; non-streaming via Obsidian's requestUrl.
+ * project. Bring-your-own-key; streaming via `fetch`/SSE with a non-streaming
+ * fallback. History is persisted per project in the plugin's data.json.
  */
 export class NxyzAgentChatView extends ItemView {
 	private messages: ChatMessage[] = [];
 	private systemContext = "";
 	private projectName: string | null = null;
+	private currentKey = GENERAL_KEY;
 	private sending = false;
+	private abortController?: AbortController;
 
 	private logEl!: HTMLElement;
 	private inputEl!: HTMLTextAreaElement;
 	private contextEl!: HTMLElement;
+	private sendBtn!: HTMLButtonElement;
 
 	constructor(leaf: WorkspaceLeaf, private readonly plugin: NxyzAgentPlugin) {
 		super(leaf);
@@ -47,13 +54,15 @@ export class NxyzAgentChatView extends ItemView {
 		await this.loadContext();
 	}
 
-	/** Rebuild the system context from the current project (if any). */
+	/** Rebuild the system context and load history for the current project. */
 	private async loadContext(): Promise<void> {
 		const project = resolveProjectNonInteractive(
 			this.app,
 			this.plugin.settings
 		);
 		if (project) {
+			this.projectName = project.name;
+			this.currentKey = project.slug;
 			try {
 				const assembly = await assembleContext(
 					this.app,
@@ -64,16 +73,17 @@ export class NxyzAgentChatView extends ItemView {
 					assembly,
 					this.plugin.settings.maxContextChars
 				).prompt;
-				this.projectName = project.name;
 			} catch {
 				this.systemContext = "";
-				this.projectName = null;
 			}
 		} else {
-			this.systemContext = "";
 			this.projectName = null;
+			this.currentKey = GENERAL_KEY;
+			this.systemContext = "";
 		}
+		this.messages = this.plugin.getChat(this.currentKey).slice();
 		this.updateContextLabel();
+		this.renderMessages();
 	}
 
 	private renderShell(): void {
@@ -92,10 +102,7 @@ export class NxyzAgentChatView extends ItemView {
 			cls: "nxyz-chat-btn",
 			text: "Clear",
 		});
-		clear.addEventListener("click", () => {
-			this.messages = [];
-			this.renderMessages();
-		});
+		clear.addEventListener("click", () => void this.clear());
 
 		this.logEl = root.createDiv({ cls: "nxyz-chat-log" });
 
@@ -109,11 +116,11 @@ export class NxyzAgentChatView extends ItemView {
 				void this.send();
 			}
 		});
-		const sendBtn = inputRow.createEl("button", {
+		this.sendBtn = inputRow.createEl("button", {
 			cls: "nxyz-chat-send mod-cta",
 			text: "Send",
 		});
-		sendBtn.addEventListener("click", () => void this.send());
+		this.sendBtn.addEventListener("click", () => void this.send());
 
 		this.renderMessages();
 	}
@@ -150,8 +157,30 @@ export class NxyzAgentChatView extends ItemView {
 		this.logEl.scrollTop = this.logEl.scrollHeight;
 	}
 
+	/** The content element of the last rendered message (for live updates). */
+	private lastContentEl(): HTMLElement | null {
+		const nodes = this.logEl.querySelectorAll(".nxyz-chat-content");
+		return (nodes.item(nodes.length - 1) as HTMLElement) ?? null;
+	}
+
+	private setSending(sending: boolean): void {
+		this.sending = sending;
+		this.sendBtn.setText(sending ? "Stop" : "Send");
+		this.sendBtn.toggleClass("mod-warning", sending);
+	}
+
+	private async clear(): Promise<void> {
+		this.messages = [];
+		await this.plugin.setChat(this.currentKey, this.messages);
+		this.renderMessages();
+	}
+
 	private async send(): Promise<void> {
-		if (this.sending) return;
+		// A second click while streaming acts as Stop.
+		if (this.sending) {
+			this.abortController?.abort();
+			return;
+		}
 		const text = this.inputEl.value.trim();
 		if (text === "") return;
 
@@ -163,31 +192,71 @@ export class NxyzAgentChatView extends ItemView {
 
 		this.messages.push({ role: "user", content: text });
 		this.inputEl.value = "";
-		this.sending = true;
+		this.setSending(true);
 		this.renderMessages();
 
-		const thinking = this.logEl.createDiv({
-			cls: "nxyz-chat-thinking",
-			text: `${providerLabel(this.plugin.settings.aiProvider)} is thinking…`,
-		});
-		this.logEl.scrollTop = this.logEl.scrollHeight;
+		// Build the request payload (system + history) before the placeholder.
+		const payload: ChatMessage[] = [];
+		if (this.systemContext) {
+			payload.push({ role: "system", content: this.systemContext });
+		}
+		payload.push(...this.messages);
 
+		const assistant: ChatMessage = { role: "assistant", content: "" };
+		this.messages.push(assistant);
+		this.renderMessages();
+		const contentEl = this.lastContentEl();
+		contentEl?.setText("…");
+
+		this.abortController = new AbortController();
 		try {
-			const payload: ChatMessage[] = [];
-			if (this.systemContext) {
-				payload.push({ role: "system", content: this.systemContext });
+			if (this.plugin.settings.aiStream) {
+				try {
+					let first = true;
+					await chatStream(
+						resolved.config,
+						payload,
+						(delta) => {
+							if (first) {
+								contentEl?.setText("");
+								first = false;
+							}
+							assistant.content += delta;
+							contentEl?.setText(assistant.content);
+							this.logEl.scrollTop = this.logEl.scrollHeight;
+						},
+						this.abortController.signal
+					);
+				} catch (streamErr) {
+					if (this.abortController.signal.aborted) throw streamErr;
+					// Streaming failed (e.g. CORS) — fall back to a single response.
+					const reply = await chatComplete(resolved.config, payload);
+					assistant.content = reply;
+					contentEl?.setText(reply);
+				}
+			} else {
+				const reply = await chatComplete(resolved.config, payload);
+				assistant.content = reply;
+				contentEl?.setText(reply);
 			}
-			payload.push(...this.messages);
-			const reply = await chatComplete(resolved.config, payload);
-			this.messages.push({ role: "assistant", content: reply });
 		} catch (e) {
-			const msg = e instanceof Error ? e.message : String(e);
-			this.messages.push({ role: "assistant", content: `⚠️ ${msg}` });
-			new Notice(msg);
+			const aborted = this.abortController.signal.aborted;
+			if (!aborted) {
+				const msg = e instanceof Error ? e.message : String(e);
+				assistant.content = `⚠️ ${msg}`;
+				contentEl?.setText(assistant.content);
+				new Notice(msg);
+			}
 		} finally {
-			this.sending = false;
-			thinking.remove();
-			this.renderMessages();
+			this.abortController = undefined;
+			this.setSending(false);
+			// Drop an assistant turn that produced nothing (e.g. stopped early).
+			if (assistant.content.trim() === "") {
+				const idx = this.messages.indexOf(assistant);
+				if (idx >= 0) this.messages.splice(idx, 1);
+				this.renderMessages();
+			}
+			await this.plugin.setChat(this.currentKey, this.messages);
 		}
 	}
 }

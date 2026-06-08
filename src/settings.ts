@@ -244,5 +244,17 @@ export class NxyzAgentSettingTab extends PluginSettingTab {
 			() => s.openaiModel,
 			(v) => (s.openaiModel = v)
 		);
+
+		new Setting(containerEl)
+			.setName("Stream responses")
+			.setDesc(
+				"Show the answer token-by-token. Falls back to a single response if streaming is blocked."
+			)
+			.addToggle((t) =>
+				t.setValue(s.aiStream).onChange(async (v) => {
+					s.aiStream = v;
+					await this.plugin.saveSettings();
+				})
+			);
 	}
 }

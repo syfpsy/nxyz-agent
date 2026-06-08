@@ -17,10 +17,11 @@ scope and explicit non-goals.
 ## v0.2 — Lightweight AI provider support
 
 - **Delivered (Unreleased):** bring-your-own-key chat over DeepSeek / OpenRouter / OpenAI
-  (`providers.ts`), and an AI chat panel (`chatView.ts`) grounded in the current project's context.
-  Opt-in; nothing is sent unless a key is set and the chat is used.
-- Remaining: streaming responses; using `chatComplete` to optionally summarize context inside
-  `condenseContext`; persisting chat history; a per-project model override.
+  (`providers.ts`), an AI chat panel (`chatView.ts`) grounded in the current project's context,
+  **streaming responses** with a non-streaming fallback, and **per-project chat history** persisted
+  in `data.json`. Opt-in; nothing is sent unless a key is set and the chat is used.
+- Remaining: using `chatComplete` to optionally summarize context inside `condenseContext`; a
+  per-project model override; richer Markdown rendering of replies.
 
 **Non-goals:** autonomous agents, background calls, sending data anywhere without explicit opt-in.
 

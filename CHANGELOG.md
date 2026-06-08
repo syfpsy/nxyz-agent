@@ -13,6 +13,11 @@ All notable changes to **nxyz agent** are documented here. The format follows
   the new chat ribbon icon, the **Open AI chat** command, or the control panel button.
 - `src/providers.ts` — one OpenAI-compatible client with per-provider base URL / key / model and
   clear error surfacing.
+- **Streaming chat responses** (token-by-token) via `fetch`/SSE, with a **Stop** control and an
+  automatic fallback to the non-streaming `requestUrl` path if streaming is blocked. New
+  **Stream responses** setting (on by default).
+- **Per-project chat history** — conversations are saved per project (keyed by slug) in the plugin's
+  `data.json` and restored when you reopen the chat or reload its context.
 - **Control panel** (right-sidebar `ItemView`): shows the current project + status, one-click buttons
   for all 7 actions, and a clickable list of project cards. Deterministic and local — no AI. Opened
   via the ribbon or the new **Open panel** command; it refreshes on context and registry changes.
@@ -29,6 +34,7 @@ All notable changes to **nxyz agent** are documented here. The format follows
   building a context pack.
 - Task extraction now preserves a checked source box (`- [x]`) as done in `TASKS.md` instead of
   rewriting it as an open task. Keyword lines (TODO/FIXME/…) are still written as open.
+- Author/developer name set to `nxyz` in `manifest.json` and `package.json`.
 
 ### Fixed
 - Symbol-only project / build-note names that slugify to an empty string now fall back to
@@ -36,6 +42,8 @@ All notable changes to **nxyz agent** are documented here. The format follows
 
 ### Internal
 - Removed an unused `asFile` helper from `fileUtils.ts`.
+- Persistence restructured to `{ settings, chats }` in `data.json`, with a backward-compatible
+  migration from the previous flat settings format (existing settings/keys are preserved).
 
 ## [0.1.0] — 2026-06-08
 
