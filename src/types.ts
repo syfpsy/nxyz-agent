@@ -53,9 +53,9 @@ export interface NxyzAgentSettings {
 }
 
 export const DEFAULT_SETTINGS: NxyzAgentSettings = {
-	projectRegistryFolder: "09 Repo Registry",
-	contextPackFolder: "09 Repo Registry/Context Packs",
-	workLogFolder: "09 Repo Registry/Work Logs",
+	projectRegistryFolder: "nxyz agent",
+	contextPackFolder: "nxyz agent/Context Packs",
+	workLogFolder: "nxyz agent/Work Logs",
 	defaultProjectStatus: "active",
 	ignoredFolders: [".obsidian", ".git", "node_modules", "dist", "build"],
 	maxContextChars: 24000,

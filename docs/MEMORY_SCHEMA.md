@@ -6,7 +6,7 @@ folders (defaults shown). Everything is plain Markdown — readable and editable
 ## Folder tree
 
 ```
-09 Repo Registry/                         (project registry folder)
+nxyz agent/                               (project registry folder)
   <slug>.md                               project cards
   Context Packs/                          (context pack output folder)
     <slug>-<YYYY-MM-DD HH-mm>.md          one pack per build

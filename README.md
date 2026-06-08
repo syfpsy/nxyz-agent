@@ -59,9 +59,9 @@ or AI in this version.
 
 | Setting | Default | Meaning |
 | --- | --- | --- |
-| Project registry folder | `09 Repo Registry` | Where project cards live. |
-| Context pack output folder | `09 Repo Registry/Context Packs` | Where context packs are written. |
-| Work log folder | `09 Repo Registry/Work Logs` | Per-project logs, tasks, decisions, build notes. |
+| Project registry folder | `nxyz agent` | Where project cards live. |
+| Context pack output folder | `nxyz agent/Context Packs` | Where context packs are written. |
+| Work log folder | `nxyz agent/Work Logs` | Per-project logs, tasks, decisions, build notes. |
 | Default project status | `active` | Status stamped into a new card. |
 | Ignored folders | `.obsidian, .git, node_modules, dist, build` | Skipped when reading linked notes / backlinks. |
 | Maximum context characters | `24000` | Hard ceiling on the assembled agent context. |
@@ -72,7 +72,7 @@ or AI in this version.
 ## Recommended vault structure
 
 ```
-09 Repo Registry/
+nxyz agent/
   my-project.md                       ← project card
   Context Packs/
     my-project-2026-06-08 14-30.md    ← generated packs

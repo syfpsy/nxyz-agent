@@ -3,6 +3,14 @@
 All notable changes to **nxyz agent** are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to [SemVer](https://semver.org/).
 
+## [Unreleased]
+
+### Changed
+- **Default folders are now plugin-named** (`nxyz agent`, `nxyz agent/Context Packs`,
+  `nxyz agent/Work Logs`) instead of `09 Repo Registry…`, so a fresh install never lands its project
+  cards in an unrelated PARA-style folder. Existing installs keep their saved folders — change them in
+  **Settings → nxyz agent** if you want the new layout.
+
 ## [0.1.0] — 2026-06-08
 
 First release. A local-first project-memory and agent-handoff plugin with an **opt-in AI layer**
