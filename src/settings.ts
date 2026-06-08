@@ -1,5 +1,5 @@
 import { App, PluginSettingTab, Setting } from "obsidian";
-import { DEFAULT_SETTINGS, ProjectStatus } from "./types";
+import { AiProvider, DEFAULT_SETTINGS, ProjectStatus } from "./types";
 import type NxyzAgentPlugin from "./main";
 
 const STATUS_OPTIONS: Record<ProjectStatus, string> = {
@@ -7,6 +7,12 @@ const STATUS_OPTIONS: Record<ProjectStatus, string> = {
 	paused: "paused",
 	archived: "archived",
 	done: "done",
+};
+
+const PROVIDER_OPTIONS: Record<AiProvider, string> = {
+	deepseek: "DeepSeek",
+	openrouter: "OpenRouter",
+	openai: "OpenAI",
 };
 
 /** Settings UI for nxyz agent. Each control persists via plugin.saveSettings. */
@@ -138,5 +144,105 @@ export class NxyzAgentSettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				})
 			);
+
+		// --- AI (bring your own key) -----------------------------------------
+		new Setting(containerEl).setName("AI (bring your own key)").setHeading();
+
+		const privacy = containerEl.createEl("p", {
+			cls: "setting-item-description",
+			text:
+				"Keys are stored locally in this plugin's data.json and are sent only to the provider you select when you use the chat. The chat sends the current project's context to that provider.",
+		});
+		privacy.style.marginTop = "0";
+
+		new Setting(containerEl)
+			.setName("Provider")
+			.setDesc("Which service the AI chat talks to.")
+			.addDropdown((d) => {
+				for (const [value, label] of Object.entries(PROVIDER_OPTIONS)) {
+					d.addOption(value, label);
+				}
+				d.setValue(s.aiProvider).onChange(async (v) => {
+					s.aiProvider = v as AiProvider;
+					await this.plugin.saveSettings();
+				});
+			});
+
+		const keyField = (
+			name: string,
+			desc: string,
+			get: () => string,
+			set: (v: string) => void
+		): void => {
+			new Setting(containerEl)
+				.setName(name)
+				.setDesc(desc)
+				.addText((t) => {
+					t.inputEl.type = "password";
+					t.setPlaceholder("sk-…")
+						.setValue(get())
+						.onChange(async (v) => {
+							set(v.trim());
+							await this.plugin.saveSettings();
+						});
+				});
+		};
+
+		keyField(
+			"DeepSeek API key",
+			"From platform.deepseek.com.",
+			() => s.deepseekApiKey,
+			(v) => (s.deepseekApiKey = v)
+		);
+		keyField(
+			"OpenRouter API key",
+			"From openrouter.ai/keys.",
+			() => s.openrouterApiKey,
+			(v) => (s.openrouterApiKey = v)
+		);
+		keyField(
+			"OpenAI API key",
+			"From platform.openai.com.",
+			() => s.openaiApiKey,
+			(v) => (s.openaiApiKey = v)
+		);
+
+		const modelField = (
+			name: string,
+			placeholder: string,
+			get: () => string,
+			set: (v: string) => void
+		): void => {
+			new Setting(containerEl)
+				.setName(name)
+				.addText((t) =>
+					t
+						.setPlaceholder(placeholder)
+						.setValue(get())
+						.onChange(async (v) => {
+							set(v.trim());
+							await this.plugin.saveSettings();
+						})
+				);
+		};
+
+		modelField(
+			"DeepSeek model",
+			DEFAULT_SETTINGS.deepseekModel,
+			() => s.deepseekModel,
+			(v) => (s.deepseekModel = v)
+		);
+		modelField(
+			"OpenRouter model",
+			DEFAULT_SETTINGS.openrouterModel,
+			() => s.openrouterModel,
+			(v) => (s.openrouterModel = v)
+		);
+		modelField(
+			"OpenAI model",
+			DEFAULT_SETTINGS.openaiModel,
+			() => s.openaiModel,
+			(v) => (s.openaiModel = v)
+		);
 	}
 }

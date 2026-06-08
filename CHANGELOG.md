@@ -6,6 +6,13 @@ All notable changes to **nxyz agent** are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- **AI chat panel (bring your own key)** — a right-sidebar chat that grounds the model in the current
+  project (its handoff prompt is sent as the system message). Providers: **DeepSeek, OpenRouter,
+  OpenAI** (all OpenAI-compatible). New settings: provider selector, an API key + model per provider.
+  Requests go through Obsidian's `requestUrl` (no CORS, works on mobile); non-streaming. Opened via
+  the new chat ribbon icon, the **Open AI chat** command, or the control panel button.
+- `src/providers.ts` — one OpenAI-compatible client with per-provider base URL / key / model and
+  clear error surfacing.
 - **Control panel** (right-sidebar `ItemView`): shows the current project + status, one-click buttons
   for all 7 actions, and a clickable list of project cards. Deterministic and local — no AI. Opened
   via the ribbon or the new **Open panel** command; it refreshes on context and registry changes.

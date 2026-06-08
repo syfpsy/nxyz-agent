@@ -85,10 +85,24 @@ or AI in this version.
       <note-title>-2026-06-08.md      ← build notes
 ```
 
+## AI chat (bring your own key)
+
+Optional. Open the **AI chat** panel (chat ribbon icon, the *Open AI chat* command, or the control
+panel button) to talk to a model grounded in the current project — its handoff prompt (constraints +
+condensed context) is sent as the system message.
+
+- Providers: **DeepSeek**, **OpenRouter**, **OpenAI** (all OpenAI-compatible). Pick one and paste its
+  key under **Settings → nxyz agent → AI (bring your own key)**, with an optional model override.
+- Keys are stored locally in the plugin's `data.json` and are sent only to the provider you select,
+  and only when you use the chat. Requests use Obsidian's `requestUrl` (no CORS; works on mobile).
+
 ## Privacy model
 
-Everything stays on your machine. The plugin only reads/writes files in your vault via the Obsidian
-API and copies prompts to your clipboard. No telemetry, no network requests, no third-party services.
+The deterministic core is fully local: it only reads/writes files in your vault via the Obsidian API
+and copies prompts to your clipboard — no telemetry, no network. **The AI chat is the only feature
+that leaves your machine:** when you send a message, the selected provider receives your current
+project's context and your messages. If you never enter a key or use the chat, nothing is sent
+anywhere. Your API keys live in `data.json` inside the plugin folder (not in your notes).
 
 ## Roadmap
 

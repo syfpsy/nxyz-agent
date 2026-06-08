@@ -8,6 +8,9 @@ import type { TFile } from "obsidian";
 
 export type ProjectStatus = "active" | "paused" | "archived" | "done";
 
+/** Supported bring-your-own-key chat providers (all OpenAI-compatible). */
+export type AiProvider = "deepseek" | "openrouter" | "openai";
+
 export interface NxyzAgentSettings {
 	/** Folder that holds project cards. */
 	projectRegistryFolder: string;
@@ -27,6 +30,18 @@ export interface NxyzAgentSettings {
 	includeBacklinks: boolean;
 	/** Include the currently active note. */
 	includeActiveNote: boolean;
+
+	// --- AI (bring your own key) ---------------------------------------------
+	/** Which provider the chat panel talks to. */
+	aiProvider: AiProvider;
+	/** API keys, stored locally in the plugin's data.json. */
+	deepseekApiKey: string;
+	openrouterApiKey: string;
+	openaiApiKey: string;
+	/** Model id per provider. */
+	deepseekModel: string;
+	openrouterModel: string;
+	openaiModel: string;
 }
 
 export const DEFAULT_SETTINGS: NxyzAgentSettings = {
@@ -39,6 +54,13 @@ export const DEFAULT_SETTINGS: NxyzAgentSettings = {
 	includeLinkedNotes: true,
 	includeBacklinks: false,
 	includeActiveNote: true,
+	aiProvider: "deepseek",
+	deepseekApiKey: "",
+	openrouterApiKey: "",
+	openaiApiKey: "",
+	deepseekModel: "deepseek-chat",
+	openrouterModel: "openai/gpt-4o-mini",
+	openaiModel: "gpt-4o-mini",
 };
 
 /**

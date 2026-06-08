@@ -98,6 +98,7 @@ export class NxyzAgentView extends ItemView {
 		button("Extract tasks", () => plugin.extractTasks(proj));
 		button("Extract decisions", () => plugin.extractDecisions(proj));
 		button("New build note", () => plugin.createBuildNote());
+		button("Open AI chat", () => plugin.activateChatView());
 
 		// Project list.
 		root.createEl("div", { cls: "nxyz-view-section", text: "Projects" });

@@ -12,6 +12,8 @@ src/
   contextPack.ts      shared context assembly + pack/prompt builders + saver
   settings.ts         NxyzAgentSettingTab (settings UI)
   view.ts             NxyzAgentView — right-sidebar control panel (ItemView)
+  providers.ts        OpenAI-compatible chat client (DeepSeek/OpenRouter/OpenAI)
+  chatView.ts         NxyzAgentChatView — AI chat panel (ItemView)
   main.ts             plugin lifecycle + command wiring (thin callbacks)
 ```
 
@@ -83,13 +85,19 @@ project card (+ resolved links)
 - Context packs use a datetime-suffixed filename; on the rare collision a `-2`, `-3` … suffix is added.
 - Missing folders are created on demand; nothing is ever deleted or overwritten.
 
-## Future AI provider layer
+## AI provider layer
 
-AI is intentionally absent in v0.1. The seam for v0.2 is a single provider interface consumed by
-`contextPack.ts` (e.g. an optional `summarize(text): Promise<string>` used to condense context, off by
-default). Because all assembly already passes through `condenseContext`, adding a provider means
-swapping the condenser, not touching commands or I/O. Keep providers pluggable, local-friendly, and
-disabled by default — see [`ROADMAP.md`](ROADMAP.md).
+`providers.ts` is a single OpenAI-compatible chat client. DeepSeek, OpenRouter and OpenAI share the
+`/chat/completions` shape, so `resolveProvider(settings)` picks the base URL / key / model for the
+selected provider and `chatComplete(config, messages)` issues the call via Obsidian's `requestUrl`
+(no CORS, mobile-safe), surfacing API errors with the provider name. `chatView.ts` builds its system
+message by reusing `assembleContext` + `buildHandoffPrompt`, so the chat is grounded in exactly the
+same context pack the deterministic commands produce — there is no second context path.
+
+AI is **opt-in and isolated**: nothing is sent anywhere unless a key is set and the chat is used. The
+deterministic core (commands, control panel, file I/O) has no dependency on `providers.ts`. A future
+step can reuse `chatComplete` to, e.g., summarize context inside `condenseContext` — without touching
+commands or I/O.
 
 ## Recorded decisions
 

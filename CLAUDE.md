@@ -21,8 +21,10 @@ Always take concise notes of what you do, so we have an efficient and reliable c
 - **`fileUtils.ts` is the single source of truth for I/O**; `templates.ts` for strings;
   `resolveCurrentProject` for project selection. Do not duplicate that logic in command callbacks.
 - **Notice on every outcome.** Success, empty result, and error each get a `new Notice(...)`.
-- **Stay within v0.1 scope.** No LLM, embeddings, vector DB, PDF/image parsing, agent runtime, shell
-  execution, cloud backend, or accounts. See `docs/ROADMAP.md` before adding anything AI-related.
+- **AI is opt-in and isolated.** The bring-your-own-key chat (`providers.ts` / `chatView.ts`) is the
+  only feature that hits the network, and only when a key is set and the chat is used. Keep the
+  deterministic core free of any dependency on `providers.ts`. Out of scope: embeddings, vector DB,
+  PDF/image parsing, autonomous agent runtime, shell execution, accounts. See `docs/ROADMAP.md`.
 - Use the public Obsidian API; avoid deprecated `activeLeaf` / `openLinkText` and the semi-private
   `getBacklinksForFile` (invert `resolvedLinks`).
 

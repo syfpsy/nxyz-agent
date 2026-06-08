@@ -16,9 +16,11 @@ scope and explicit non-goals.
 
 ## v0.2 — Lightweight AI provider support
 
-- Optional, pluggable provider interface consumed by `contextPack.ts` (e.g. `summarize(text)`), used
-  only to condense context. **Off by default**; bring-your-own key; local-friendly.
-- No autonomous behavior — the user still triggers every action.
+- **Delivered (Unreleased):** bring-your-own-key chat over DeepSeek / OpenRouter / OpenAI
+  (`providers.ts`), and an AI chat panel (`chatView.ts`) grounded in the current project's context.
+  Opt-in; nothing is sent unless a key is set and the chat is used.
+- Remaining: streaming responses; using `chatComplete` to optionally summarize context inside
+  `condenseContext`; persisting chat history; a per-project model override.
 
 **Non-goals:** autonomous agents, background calls, sending data anywhere without explicit opt-in.
 

@@ -9,20 +9,25 @@ Always take concise notes of what you do, so we have an efficient and reliable c
 
 A lean, local-first Obsidian plugin (id `nxyz-agent`) for project memory and AI-agent handoff:
 project cards, context packs, agent prompts, work logs, build notes, and task/decision extraction.
-**No LLM, no embeddings, no network, no shell, no whole-vault scans, no destructive writes** in v0.1.
+The deterministic core is local-only: **no embeddings, no shell, no whole-vault scans, no destructive
+writes.** AI is **opt-in**: a bring-your-own-key chat (DeepSeek/OpenRouter/OpenAI) that sends context
+to the chosen provider only when a key is set and the chat is used.
 
 ## Module map (`src/`)
 
 | File | Responsibility |
 | --- | --- |
-| `types.ts` | Types + `DEFAULT_SETTINGS`. Zero logic, the dependency floor. |
+| `types.ts` | Types + `DEFAULT_SETTINGS` (incl. AI/BYOK fields). Zero logic, the dependency floor. |
 | `fileUtils.ts` | The reusable helpers (folder/file/path/string/date, linked notes, backlinks, truncation). |
 | `templates.ts` | Pure Markdown string builders for every file body and prompt. |
 | `modals.ts` | Input-only UI: text prompt + fuzzy project picker. |
 | `projectRegistry.ts` | Project resolution, card creation, work-log/build-note/task/decision writers, parsers. |
 | `contextPack.ts` | Shared assembly core: `assembleContext` + `buildContextPack`/`buildHandoffPrompt` + `saveContextPack`. |
-| `settings.ts` | `NxyzAgentSettingTab` — the settings UI. |
-| `main.ts` | Plugin lifecycle + the 8 command wirings. Thin callbacks only. |
+| `providers.ts` | OpenAI-compatible chat client (DeepSeek/OpenRouter/OpenAI) via `requestUrl`. |
+| `settings.ts` | `NxyzAgentSettingTab` — the settings UI (incl. the AI section). |
+| `view.ts` | `NxyzAgentView` — deterministic control panel (ItemView). |
+| `chatView.ts` | `NxyzAgentChatView` — AI chat panel (ItemView). |
+| `main.ts` | Plugin lifecycle + command/view wiring. Thin callbacks only. |
 
 ## The one rule that keeps this clean
 

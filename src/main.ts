@@ -2,6 +2,7 @@ import { Notice, Plugin, TFile, WorkspaceLeaf, normalizePath } from "obsidian";
 import { DEFAULT_SETTINGS, NxyzAgentSettings, ResolvedProject } from "./types";
 import { NxyzAgentSettingTab } from "./settings";
 import { NXYZ_VIEW_TYPE, NxyzAgentView } from "./view";
+import { NXYZ_CHAT_VIEW_TYPE, NxyzAgentChatView } from "./chatView";
 import {
 	createFileIfMissing,
 	getCurrentDateTimeString,
@@ -59,16 +60,29 @@ export default class NxyzAgentPlugin extends Plugin {
 			NXYZ_VIEW_TYPE,
 			(leaf) => new NxyzAgentView(leaf, this)
 		);
+		this.registerView(
+			NXYZ_CHAT_VIEW_TYPE,
+			(leaf) => new NxyzAgentChatView(leaf, this)
+		);
 
 		// The ribbon opens the control panel, which hosts every action.
 		this.addRibbonIcon("bot", "nxyz agent: open panel", () =>
 			this.activateView()
+		);
+		this.addRibbonIcon("message-circle", "nxyz agent: open AI chat", () =>
+			this.activateChatView()
 		);
 
 		this.addCommand({
 			id: "open-panel",
 			name: "Open panel",
 			callback: () => this.activateView(),
+		});
+
+		this.addCommand({
+			id: "open-chat",
+			name: "Open AI chat",
+			callback: () => this.activateChatView(),
 		});
 
 		this.addCommand({
@@ -122,18 +136,28 @@ export default class NxyzAgentPlugin extends Plugin {
 		await this.saveData(this.settings);
 	}
 
-	/** Open (or reveal) the control panel in the right sidebar. */
-	async activateView(): Promise<void> {
+	/** Open (or reveal) a sidebar view of the given type. */
+	private async revealView(type: string): Promise<void> {
 		const { workspace } = this.app;
 		let leaf: WorkspaceLeaf | null =
-			workspace.getLeavesOfType(NXYZ_VIEW_TYPE)[0] ?? null;
+			workspace.getLeavesOfType(type)[0] ?? null;
 		if (!leaf) {
 			leaf = workspace.getRightLeaf(false);
 			if (leaf) {
-				await leaf.setViewState({ type: NXYZ_VIEW_TYPE, active: true });
+				await leaf.setViewState({ type, active: true });
 			}
 		}
 		if (leaf) workspace.revealLeaf(leaf);
+	}
+
+	/** Open (or reveal) the control panel in the right sidebar. */
+	async activateView(): Promise<void> {
+		await this.revealView(NXYZ_VIEW_TYPE);
+	}
+
+	/** Open (or reveal) the AI chat panel in the right sidebar. */
+	async activateChatView(): Promise<void> {
+		await this.revealView(NXYZ_CHAT_VIEW_TYPE);
 	}
 
 	/** The active file if it is a Markdown note, else null. */
