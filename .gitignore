@@ -15,6 +15,9 @@ main.js
 # Exclude sourcemaps
 *.map
 
+# Test runner build output
+.test-build
+
 # obsidian — per-user runtime plugin settings
 data.json
 

@@ -44,6 +44,10 @@ or string logic in command callbacks. The dependency graph is acyclic:
 
 - `npm install`
 - `npm run build` — must pass `tsc -noEmit` with zero errors and emit `main.js`.
+- `npm test` — unit tests for the pure logic (parsers, slug, truncate, date helpers). The harness
+  (`test/run-tests.mjs`) esbuild-bundles `test/*.test.ts` against `test/obsidian-stub.ts` and runs
+  it with Node's built-in `node:test`. No test framework dependency. Add cases when you touch a
+  pure function; functions needing the live vault are covered by the manual checklist instead.
 - `npm run dev` — esbuild watch for live iteration in a dev vault.
 
 ## Conventions

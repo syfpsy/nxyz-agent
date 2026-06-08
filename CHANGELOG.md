@@ -8,10 +8,17 @@ All notable changes to **nxyz agent** are documented here. The format follows
 ### Added
 - Ribbon icon shortcut for **Build context pack** (the most-used flow).
 - `.gitattributes` to normalize line endings (LF in repo) and mark `main.js` as generated.
+- Unit tests for the pure logic (slugify, truncate, ignore matching, task/decision extraction, date
+  helpers) via a zero-dependency harness: esbuild bundles the tests against a small `obsidian` stub
+  and Node's built-in `node:test` runner executes them. Run with `npm test`.
 
 ### Changed
 - Task extraction now preserves a checked source box (`- [x]`) as done in `TASKS.md` instead of
   rewriting it as an open task. Keyword lines (TODO/FIXME/…) are still written as open.
+
+### Fixed
+- Symbol-only project / build-note names that slugify to an empty string now fall back to
+  `untitled` / `build-note` instead of producing a hidden `.md` file.
 
 ### Internal
 - Removed an unused `asFile` helper from `fileUtils.ts`.

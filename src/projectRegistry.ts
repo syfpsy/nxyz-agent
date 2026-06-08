@@ -99,7 +99,7 @@ export async function createProjectCard(
 	settings: NxyzAgentSettings,
 	name: string
 ): Promise<{ file: TFile; created: boolean; slug: string }> {
-	const slug = slugifyProjectName(name);
+	const slug = slugifyProjectName(name) || "untitled";
 	const path = normalizePath(`${settings.projectRegistryFolder}/${slug}.md`);
 	const content = projectCardTemplate(
 		name,
@@ -136,7 +136,7 @@ export async function createBuildNote(
 ): Promise<{ file: TFile; created: boolean }> {
 	const date = getCurrentDateString();
 	const title = `${sourceNote.basename} — ${date}`;
-	const fileSlug = slugifyProjectName(title);
+	const fileSlug = slugifyProjectName(title) || "build-note";
 	const path = normalizePath(
 		`${settings.workLogFolder}/build-notes/${fileSlug}.md`
 	);
