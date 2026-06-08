@@ -50,10 +50,15 @@ Obsidian-native variables are used so the plugin respects the active theme.
 }
 
 .nxyz-view-project-status,
+.nxyz-view-project-meta,
 .nxyz-view-project-empty {
 	color: var(--text-muted);
 	font-size: var(--font-ui-smaller);
 	margin-top: var(--size-2-1);
+}
+
+.nxyz-view-project-meta {
+	word-break: break-word;
 }
 
 .nxyz-view-actions {
@@ -145,6 +150,16 @@ Obsidian-native variables are used so the plugin respects the active theme.
 	font-size: var(--font-ui-smaller);
 	margin: auto;
 	text-align: center;
+}
+
+.nxyz-chat-nokey {
+	color: var(--text-warning);
+}
+
+.nxyz-chat-nokey a {
+	color: var(--text-accent);
+	cursor: pointer;
+	text-decoration: underline;
 }
 
 .nxyz-chat-msg {

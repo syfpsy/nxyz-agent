@@ -19,7 +19,10 @@ import {
 import {
 	activeMarkdownFile,
 	copyToClipboard,
+	createFileIfMissing,
 	errorMessage,
+	getCurrentDateTimeString,
+	openFile,
 } from "./fileUtils";
 import {
 	CONTINUE_INSTRUCTION,
@@ -82,6 +85,7 @@ export class NxyzAgentChatView extends ItemView {
 	private sendBtn!: HTMLButtonElement;
 	private reloadBtn!: HTMLButtonElement;
 	private clearBtn!: HTMLButtonElement;
+	private exportBtn!: HTMLButtonElement;
 	private continueBtn!: HTMLButtonElement;
 	private quickBtns: HTMLButtonElement[] = [];
 
@@ -205,6 +209,12 @@ export class NxyzAgentChatView extends ItemView {
 			text: "Clear",
 		});
 		this.clearBtn.addEventListener("click", () => void this.clear());
+		this.exportBtn = header.createEl("button", {
+			cls: "nxyz-chat-btn",
+			text: "Export",
+		});
+		this.exportBtn.title = "Save the full conversation to a Markdown file.";
+		this.exportBtn.addEventListener("click", () => void this.exportConversation());
 		this.continueBtn = header.createEl("button", {
 			cls: "nxyz-chat-btn nxyz-chat-continue",
 			text: "Continue",
@@ -230,12 +240,19 @@ export class NxyzAgentChatView extends ItemView {
 		const inputRow = root.createDiv({ cls: "nxyz-chat-input-row" });
 		this.inputEl = inputRow.createEl("textarea", { cls: "nxyz-chat-input" });
 		this.inputEl.placeholder =
-			"Ask about this project…  (Enter to send, Shift+Enter for newline)";
+			"Ask about this project…  (Enter or Ctrl+Enter to send, Shift+Enter for newline)";
 		this.inputEl.addEventListener("keydown", (e) => {
-			if (e.key === "Enter" && !e.shiftKey) {
+			const send = (e.key === "Enter" && !e.shiftKey) ||
+				(e.key === "Enter" && (e.ctrlKey || e.metaKey));
+			if (send) {
 				e.preventDefault();
 				void this.send();
 			}
+		});
+		// Auto-grow: resize to content, capped by the CSS max-height.
+		this.inputEl.addEventListener("input", () => {
+			this.inputEl.style.height = "auto";
+			this.inputEl.style.height = `${this.inputEl.scrollHeight}px`;
 		});
 		this.sendBtn = inputRow.createEl("button", {
 			cls: "nxyz-chat-send mod-cta",
@@ -341,10 +358,24 @@ export class NxyzAgentChatView extends ItemView {
 		this.resetRenderChild();
 		this.logEl.empty();
 		if (this.messages.length === 0) {
-			this.logEl.createDiv({
-				cls: "nxyz-chat-empty",
+			const empty = this.logEl.createDiv({ cls: "nxyz-chat-empty" });
+			empty.createSpan({
 				text: "Start a conversation. The current project's context is sent as background.",
 			});
+			// Show a settings nudge when no key is configured for the active provider.
+			const resolved = resolveProvider(this.plugin.settings, this.override);
+			if (!resolved.ok) {
+				empty.createEl("br");
+				empty.createEl("br");
+				const hint = empty.createSpan({ cls: "nxyz-chat-nokey" });
+				hint.createSpan({ text: "No API key set. " });
+				const link = hint.createEl("a", { text: "Open settings" });
+				link.addEventListener("click", () => {
+					// @ts-ignore — Obsidian's internal app.setting.open()
+					(this.app as unknown as { setting?: { open?: () => void } }).setting?.open?.();
+				});
+				hint.createSpan({ text: " → nxyz agent → AI to add one." });
+			}
 			return;
 		}
 		for (const m of this.messages) this.addMessageEl(m);
@@ -363,6 +394,7 @@ export class NxyzAgentChatView extends ItemView {
 		// Prevent swapping the conversation out from under an in-flight request.
 		this.reloadBtn.disabled = sending;
 		this.clearBtn.disabled = sending;
+		this.exportBtn.disabled = sending;
 		this.continueBtn.disabled = sending;
 		this.quickBtns.forEach((b) => (b.disabled = sending));
 	}
@@ -380,6 +412,41 @@ export class NxyzAgentChatView extends ItemView {
 		this.updateContinueVisibility();
 		await this.plugin.setChat(this.currentKey, this.messages);
 		this.renderMessages();
+	}
+
+	/** Export the full conversation to a Markdown file in the work-log folder. */
+	private async exportConversation(): Promise<void> {
+		const visible = this.messages.filter((m) => m.role !== "system");
+		if (visible.length === 0) {
+			new Notice("Nothing to export — conversation is empty.");
+			return;
+		}
+		const dateStr = getCurrentDateTimeString();
+		const label = this.projectName ?? "general";
+		const slug = label.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+		const stamp = dateStr.replace(/[: ]/g, "-");
+
+		const lines: string[] = [
+			`# Chat — ${label}`,
+			``,
+			`Exported: ${dateStr}`,
+			``,
+		];
+		for (const m of visible) {
+			lines.push(`---`, ``, `**${m.role === "user" ? "You" : "Agent"}**`, ``);
+			lines.push(m.content.trim(), ``);
+		}
+		const content = lines.join("\n");
+
+		try {
+			const folder = this.plugin.settings.workLogFolder;
+			const path = `${folder}/${slug}/chat-export-${stamp}.md`;
+			const { file } = await createFileIfMissing(this.app, path, content);
+			await openFile(this.app, file);
+			new Notice(`Conversation exported to ${file.path}`);
+		} catch (e) {
+			new Notice(`Could not export: ${errorMessage(e)}`);
+		}
 	}
 
 	private async send(preset?: string): Promise<void> {

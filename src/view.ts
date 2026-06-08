@@ -91,6 +91,25 @@ export class NxyzAgentView extends ItemView {
 				cls: "nxyz-view-project-status",
 				text: `status: ${status}`,
 			});
+			// Show extra card meta when present.
+			const metaLines: string[] = [];
+			if (current.meta.repo && typeof current.meta.repo === "string" && current.meta.repo.trim()) {
+				metaLines.push(`repo: ${current.meta.repo.trim()}`);
+			}
+			if (current.meta.domain && typeof current.meta.domain === "string" && current.meta.domain.trim()) {
+				metaLines.push(`domain: ${current.meta.domain.trim()}`);
+			}
+			const stack = current.meta.stack;
+			const stackStr = Array.isArray(stack)
+				? stack.filter((s): s is string => typeof s === "string" && s.trim() !== "").join(", ")
+				: typeof stack === "string" ? stack.trim() : "";
+			if (stackStr) metaLines.push(`stack: ${stackStr}`);
+			if (metaLines.length > 0) {
+				box.createEl("div", {
+					cls: "nxyz-view-project-meta",
+					text: metaLines.join(" · "),
+				});
+			}
 		} else {
 			box.createEl("div", {
 				cls: "nxyz-view-project-empty",

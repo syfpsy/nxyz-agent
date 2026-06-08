@@ -185,7 +185,13 @@ export class NxyzAgentComposeView extends ItemView {
 			cls: "nxyz-compose-instruction",
 		});
 		this.instructionEl.placeholder =
-			"Describe the page to create, or how to rewrite the open note…";
+			"Describe the page to create, or how to rewrite the open note…  (Ctrl+Enter to generate)";
+		this.instructionEl.addEventListener("keydown", (e) => {
+			if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+				e.preventDefault();
+				void this.generate();
+			}
+		});
 
 		const actions = bar.createDiv({ cls: "nxyz-compose-actions" });
 		this.genBtn = actions.createEl("button", {
@@ -249,12 +255,14 @@ export class NxyzAgentComposeView extends ItemView {
 
 	private updateCharCount(): void {
 		if (!this.charCountEl) return;
-		const len = this.sourceEl.value.length;
-		if (len === 0) {
+		const text = this.sourceEl.value;
+		if (text.length === 0) {
 			this.charCountEl.setText("");
 			return;
 		}
-		this.charCountEl.setText(`${len.toLocaleString()} chars`);
+		const chars = text.length.toLocaleString();
+		const words = text.trim().split(/\s+/).filter(Boolean).length.toLocaleString();
+		this.charCountEl.setText(`${chars} chars · ${words} words`);
 	}
 
 	/** Load the active note content into the source pane for manual editing. */
