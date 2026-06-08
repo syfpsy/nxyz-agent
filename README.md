@@ -1,0 +1,97 @@
+# nxyz agent
+
+A lean, **local-first** Obsidian plugin that turns your vault into structured project memory and an
+AI-agent handoff system. For each project it keeps a Markdown **project card**, builds a focused
+**context pack**, and prepares a clean **agent prompt** you can paste into Claude Code, Codex, Cursor,
+ChatGPT, or any coding agent.
+
+It is **not** a "chat with my notes" plugin. There is no LLM call, no embeddings, no vector database,
+and no network access in this version — just disciplined Markdown and clipboard workflows.
+
+## What it does
+
+- **Create project cards** — one structured card per project (repo, stack, status, decisions, log).
+- **Build context packs** — gather the card + optional active note, linked notes and backlinks into a
+  single, character-budgeted document with a copy-paste-ready agent prompt.
+- **Copy agent handoff prompts** — the same prompt, straight to your clipboard, no file written.
+- **Append work logs** — dated entries appended to a per-project log.
+- **Create build notes** — capture the current note as a structured build note.
+- **Extract tasks & decisions** — pull checkboxes / TODO-style lines and decision statements out of a
+  note into per-project `TASKS.md` / `DECISIONS.md` (append-only, never overwritten).
+
+## What it does NOT do (yet)
+
+No embeddings · no vector DB · no PDF/image parsing · no autonomous agent runtime · no shell
+execution · no cloud backend · no login/accounts · no whole-vault scans · no destructive file
+operations · never overwrites an existing note. See [`docs/ROADMAP.md`](docs/ROADMAP.md).
+
+## Install (local development)
+
+1. `npm install`
+2. `npm run dev` (watch) or `npm run build` (one-off production bundle → `main.js`).
+3. Copy or symlink `main.js`, `manifest.json` and `styles.css` into
+   `<YourVault>/.obsidian/plugins/nxyz-agent/`.
+   - PowerShell symlink (Developer Mode or admin):
+     ```powershell
+     New-Item -ItemType SymbolicLink -Path "C:\YourVault\.obsidian\plugins\nxyz-agent" -Target "C:\Repos\nxyz_obsidian"
+     ```
+4. Obsidian → Settings → Community plugins → enable **nxyz agent**.
+
+## Commands
+
+In the command palette they appear prefixed with `nxyz agent:`.
+
+| Command | What it does |
+| --- | --- |
+| Create project card | Prompt for a name, create a card in the registry folder (opens it if it exists). |
+| Build context pack for current project | Assemble a context pack, save it, copy the prompt, open it. |
+| Copy agent handoff prompt | Build the agent prompt and copy it to the clipboard (no file). |
+| Append work log | Prompt for an entry and append a dated section to the project log. |
+| Create build note from current note | Capture the active note as a structured build note. |
+| Extract tasks from current note | Append checkboxes / TODO-style lines to the project `TASKS.md`. |
+| Extract decisions from current note | Append decision statements to the project `DECISIONS.md`. |
+
+## Settings
+
+| Setting | Default | Meaning |
+| --- | --- | --- |
+| Project registry folder | `09 Repo Registry` | Where project cards live. |
+| Context pack output folder | `09 Repo Registry/Context Packs` | Where context packs are written. |
+| Work log folder | `09 Repo Registry/Work Logs` | Per-project logs, tasks, decisions, build notes. |
+| Default project status | `active` | Status stamped into a new card. |
+| Ignored folders | `.obsidian, .git, node_modules, dist, build` | Skipped when reading linked notes / backlinks. |
+| Maximum context characters | `24000` | Hard ceiling on the assembled agent context. |
+| Include linked notes | `true` | Include notes the card links out to. |
+| Include backlinks | `false` | Include notes that link back to the card. |
+| Include current active note | `true` | Include the currently open note. |
+
+## Recommended vault structure
+
+```
+09 Repo Registry/
+  my-project.md                       ← project card
+  Context Packs/
+    my-project-2026-06-08 14-30.md    ← generated packs
+  Work Logs/
+    my-project/
+      log.md                          ← dated work log
+      TASKS.md                        ← extracted tasks
+      DECISIONS.md                    ← extracted decisions
+    build-notes/
+      <note-title>-2026-06-08.md      ← build notes
+```
+
+## Privacy model
+
+Everything stays on your machine. The plugin only reads/writes files in your vault via the Obsidian
+API and copies prompts to your clipboard. No telemetry, no network requests, no third-party services.
+
+## Roadmap
+
+`v0.1` local context-pack MVP (this release) → `v0.2` lightweight AI provider → `v0.3` project
+dashboard → `v0.4` Claude Code / Codex handoff adapters → `v0.5` embeddings (only after the basics are
+solid). Full detail in [`docs/ROADMAP.md`](docs/ROADMAP.md).
+
+## License
+
+MIT.

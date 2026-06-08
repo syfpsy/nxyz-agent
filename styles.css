@@ -1,0 +1,28 @@
+/*
+nxyz agent — minimal modal styling.
+Obsidian-native variables are used so the plugin respects the active theme.
+*/
+
+.nxyz-modal-title {
+	margin-top: 0;
+	margin-bottom: var(--size-4-3);
+}
+
+.nxyz-modal-input {
+	width: 100%;
+	margin-bottom: var(--size-4-3);
+}
+
+.nxyz-modal-textarea {
+	width: 100%;
+	min-height: 8em;
+	margin-bottom: var(--size-4-3);
+	resize: vertical;
+	font-family: inherit;
+}
+
+.nxyz-modal-buttons {
+	display: flex;
+	justify-content: flex-end;
+	gap: var(--size-4-2);
+}

@@ -1,0 +1,93 @@
+import type { TFile } from "obsidian";
+
+/**
+ * Shared types and constants for nxyz agent.
+ * This module is the dependency floor: it holds no logic and imports nothing
+ * local, so every other module can depend on it without creating a cycle.
+ */
+
+export type ProjectStatus = "active" | "paused" | "archived" | "done";
+
+export interface NxyzAgentSettings {
+	/** Folder that holds project cards. */
+	projectRegistryFolder: string;
+	/** Folder where generated context packs are written. */
+	contextPackFolder: string;
+	/** Folder that holds per-project work logs, tasks, decisions and build notes. */
+	workLogFolder: string;
+	/** Status stamped into a freshly created project card. */
+	defaultProjectStatus: ProjectStatus;
+	/** Path fragments that are skipped when reading linked notes / backlinks. */
+	ignoredFolders: string[];
+	/** Hard ceiling on the assembled context size, in characters. */
+	maxContextChars: number;
+	/** Include notes the project card links out to. */
+	includeLinkedNotes: boolean;
+	/** Include notes that link back to the project card. */
+	includeBacklinks: boolean;
+	/** Include the currently active note. */
+	includeActiveNote: boolean;
+}
+
+export const DEFAULT_SETTINGS: NxyzAgentSettings = {
+	projectRegistryFolder: "09 Repo Registry",
+	contextPackFolder: "09 Repo Registry/Context Packs",
+	workLogFolder: "09 Repo Registry/Work Logs",
+	defaultProjectStatus: "active",
+	ignoredFolders: [".obsidian", ".git", "node_modules", "dist", "build"],
+	maxContextChars: 24000,
+	includeLinkedNotes: true,
+	includeBacklinks: false,
+	includeActiveNote: true,
+};
+
+/**
+ * Parsed frontmatter of a project card. Every field is optional because cards
+ * are plain Markdown that the user may hand-edit.
+ */
+export interface ProjectCardMeta {
+	type?: string;
+	status?: ProjectStatus | string;
+	repo?: string;
+	domain?: string;
+	stack?: string | string[];
+	tags?: string[];
+	last_reviewed?: string;
+	agent_scope?: string;
+	[key: string]: unknown;
+}
+
+/**
+ * The single reusable handle to "the current project", produced by
+ * resolveCurrentProject and consumed by most commands.
+ */
+export interface ResolvedProject {
+	/** The project card file in the registry folder. */
+	file: TFile;
+	/** Stable slug = card basename. Used for work logs, tasks, decisions. */
+	slug: string;
+	/** Parsed frontmatter (never null; empty object when absent). */
+	meta: ProjectCardMeta;
+	/** Human display name = card basename. */
+	name: string;
+}
+
+/** A note plus its content, used for linked notes and backlinks. */
+export interface LinkedNote {
+	file: TFile;
+	content: string;
+}
+
+/** Everything gathered for a context pack / handoff prompt. */
+export interface ContextAssembly {
+	project: ResolvedProject;
+	generatedAt: string;
+	cardContent: string;
+	activeNote: LinkedNote | null;
+	linkedNotes: LinkedNote[];
+	backlinks: LinkedNote[];
+	settingsSummary: string;
+	constraints: string[];
+	/** True if any section was cut to honour maxContextChars. */
+	truncated: boolean;
+}

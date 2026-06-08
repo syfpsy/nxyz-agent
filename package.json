@@ -1,0 +1,24 @@
+{
+	"name": "obsidian-nxyz-agent",
+	"version": "0.1.0",
+	"description": "Local-first project memory and AI-agent handoff: project cards, context packs, work logs.",
+	"main": "main.js",
+	"type": "module",
+	"scripts": {
+		"dev": "node esbuild.config.mjs",
+		"build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
+		"version": "node version-bump.mjs && git add manifest.json versions.json"
+	},
+	"keywords": [
+		"obsidian",
+		"obsidian-plugin"
+	],
+	"author": "Seyfi Cem Baskin",
+	"license": "MIT",
+	"devDependencies": {
+		"@types/node": "^22.15.17",
+		"esbuild": "0.25.5",
+		"obsidian": "^1.13.0",
+		"typescript": "^5.8.3"
+	}
+}
