@@ -39,11 +39,14 @@ operations · never overwrites an existing note. See [`docs/ROADMAP.md`](docs/RO
 
 ## Commands
 
-In the command palette they appear prefixed with `nxyz agent:`. A ribbon icon (the bot) is a
-one-click shortcut to **Build context pack for current project**.
+In the command palette they appear prefixed with `nxyz agent:`. The ribbon icon (the bot) opens the
+**control panel**, a right-sidebar view with the current project, one-click buttons for every action,
+and a clickable list of your project cards. Everything is local and deterministic — there is no chat
+or AI in this version.
 
 | Command | What it does |
 | --- | --- |
+| Open panel | Open the control panel in the right sidebar. |
 | Create project card | Prompt for a name, create a card in the registry folder (opens it if it exists). |
 | Build context pack for current project | Assemble a context pack, save it, copy the prompt, open it. |
 | Copy agent handoff prompt | Build the agent prompt and copy it to the clipboard (no file). |

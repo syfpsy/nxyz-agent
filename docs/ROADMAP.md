@@ -24,8 +24,10 @@ scope and explicit non-goals.
 
 ## v0.3 — Project dashboard
 
-- A read-only view listing projects with status, last reviewed, and quick actions (build pack, open
-  log). Built on the existing registry; no new data model.
+- **Partially delivered early** (Unreleased): a right-sidebar control panel (`view.ts`) lists project
+  cards with the current project + status and one-click actions.
+- Remaining: surface `last_reviewed` and richer per-project state in the list; inline open of the
+  work log; light sorting/filtering. Built on the existing registry; no new data model.
 
 **Non-goals:** editing project data from the dashboard beyond what commands already do.
 

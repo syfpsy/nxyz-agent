@@ -55,36 +55,47 @@ export function listProjectCards(
 }
 
 /**
- * Resolve the current project using the spec's three-tier strategy:
+ * Resolve the current project from the active file only (tiers 1–2), without
+ * ever showing a picker. Used by the panel to reflect context passively.
  *   1. active file whose frontmatter type is "project";
- *   2. a registry card whose basename matches the active note's title;
- *   3. a fuzzy picker over all registry cards.
+ *   2. a registry card whose basename matches the active note's title.
+ */
+export function resolveProjectNonInteractive(
+	app: App,
+	settings: NxyzAgentSettings
+): ResolvedProject | null {
+	const active = app.workspace.getActiveFile();
+	if (!active) return null;
+
+	// Tier 1: active file is itself a project card.
+	const meta = getFrontmatter(app, active);
+	if (meta?.type === "project") {
+		return toResolvedProject(app, active);
+	}
+
+	// Tier 2: a registry card named like the active note.
+	const candidatePath = normalizePath(
+		`${settings.projectRegistryFolder}/${active.basename}.md`
+	);
+	const candidate = app.vault.getAbstractFileByPath(candidatePath);
+	if (candidate instanceof TFile) {
+		return toResolvedProject(app, candidate);
+	}
+
+	return null;
+}
+
+/**
+ * Resolve the current project using the spec's three-tier strategy: the
+ * passive tiers 1–2 above, falling back to (3) a fuzzy picker over all cards.
  * Returns null when no card can be resolved (no cards, or picker cancelled).
  */
 export async function resolveCurrentProject(
 	app: App,
 	settings: NxyzAgentSettings
 ): Promise<ResolvedProject | null> {
-	const active = app.workspace.getActiveFile();
-
-	// Tier 1: active file is itself a project card.
-	if (active) {
-		const meta = getFrontmatter(app, active);
-		if (meta?.type === "project") {
-			return toResolvedProject(app, active);
-		}
-	}
-
-	// Tier 2: a registry card named like the active note.
-	if (active) {
-		const candidatePath = normalizePath(
-			`${settings.projectRegistryFolder}/${active.basename}.md`
-		);
-		const candidate = app.vault.getAbstractFileByPath(candidatePath);
-		if (candidate instanceof TFile) {
-			return toResolvedProject(app, candidate);
-		}
-	}
+	const direct = resolveProjectNonInteractive(app, settings);
+	if (direct) return direct;
 
 	// Tier 3: pick from the registry.
 	const cards = listProjectCards(app, settings);

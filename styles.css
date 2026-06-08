@@ -26,3 +26,79 @@ Obsidian-native variables are used so the plugin respects the active theme.
 	justify-content: flex-end;
 	gap: var(--size-4-2);
 }
+
+/* Control panel (right sidebar view) */
+.nxyz-view {
+	padding: var(--size-4-3);
+}
+
+.nxyz-view-title {
+	font-weight: var(--font-bold);
+	font-size: var(--font-ui-large);
+	margin-bottom: var(--size-4-3);
+}
+
+.nxyz-view-project {
+	padding: var(--size-4-2) var(--size-4-3);
+	margin-bottom: var(--size-4-3);
+	border-radius: var(--radius-m);
+	background: var(--background-secondary);
+}
+
+.nxyz-view-project-name {
+	font-weight: var(--font-semibold);
+}
+
+.nxyz-view-project-status,
+.nxyz-view-project-empty {
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+	margin-top: var(--size-2-1);
+}
+
+.nxyz-view-actions {
+	display: flex;
+	flex-direction: column;
+	gap: var(--size-2-2);
+	margin-bottom: var(--size-4-4);
+}
+
+.nxyz-view-btn {
+	width: 100%;
+	text-align: left;
+	cursor: pointer;
+}
+
+.nxyz-view-section {
+	font-size: var(--font-ui-smaller);
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	color: var(--text-muted);
+	margin-bottom: var(--size-2-2);
+}
+
+.nxyz-view-list {
+	display: flex;
+	flex-direction: column;
+	gap: var(--size-2-1);
+}
+
+.nxyz-view-item {
+	padding: var(--size-2-2) var(--size-4-2);
+	border-radius: var(--radius-s);
+	cursor: pointer;
+}
+
+.nxyz-view-item:hover {
+	background: var(--background-modifier-hover);
+}
+
+.nxyz-view-item.is-active {
+	background: var(--background-modifier-active-hover);
+	font-weight: var(--font-semibold);
+}
+
+.nxyz-view-empty {
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+}

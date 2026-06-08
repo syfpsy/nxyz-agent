@@ -6,13 +6,20 @@ All notable changes to **nxyz agent** are documented here. The format follows
 ## [Unreleased]
 
 ### Added
-- Ribbon icon shortcut for **Build context pack** (the most-used flow).
-- `.gitattributes` to normalize line endings (LF in repo) and mark `main.js` as generated.
+- **Control panel** (right-sidebar `ItemView`): shows the current project + status, one-click buttons
+  for all 7 actions, and a clickable list of project cards. Deterministic and local — no AI. Opened
+  via the ribbon or the new **Open panel** command; it refreshes on context and registry changes.
+- `resolveProjectNonInteractive` (tiers 1–2, no picker) so the panel reflects the active project
+  passively.
+- Ribbon icon shortcut and an **Open panel** command.
 - Unit tests for the pure logic (slugify, truncate, ignore matching, task/decision extraction, date
   helpers) via a zero-dependency harness: esbuild bundles the tests against a small `obsidian` stub
   and Node's built-in `node:test` runner executes them. Run with `npm test`.
+- `.gitattributes` to normalize line endings (LF in repo) and mark `main.js` as generated.
 
 ### Changed
+- The ribbon icon now **opens the control panel** (which hosts every action) instead of directly
+  building a context pack.
 - Task extraction now preserves a checked source box (`- [x]`) as done in `TASKS.md` instead of
   rewriting it as an open task. Keyword lines (TODO/FIXME/…) are still written as open.
 

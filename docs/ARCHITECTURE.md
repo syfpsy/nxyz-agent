@@ -11,8 +11,15 @@ src/
   projectRegistry.ts  project resolution, card creation, writers, parsers
   contextPack.ts      shared context assembly + pack/prompt builders + saver
   settings.ts         NxyzAgentSettingTab (settings UI)
+  view.ts             NxyzAgentView — right-sidebar control panel (ItemView)
   main.ts             plugin lifecycle + command wiring (thin callbacks)
 ```
+
+The control panel (`view.ts`) is a thin launcher: it reads the current project via
+`resolveProjectNonInteractive` (tiers 1–2, never a picker), lists cards via `listProjectCards`, and
+its buttons call the plugin's public command methods — passing the panel's current project so they
+skip re-resolution. It holds no business logic and re-renders on `active-leaf-change`, `file-open`,
+and vault create/delete/rename.
 
 ## Dependency graph (acyclic)
 

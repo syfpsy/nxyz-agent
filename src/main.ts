@@ -1,6 +1,7 @@
-import { Notice, Plugin, TFile, normalizePath } from "obsidian";
-import { DEFAULT_SETTINGS, NxyzAgentSettings } from "./types";
+import { Notice, Plugin, TFile, WorkspaceLeaf, normalizePath } from "obsidian";
+import { DEFAULT_SETTINGS, NxyzAgentSettings, ResolvedProject } from "./types";
 import { NxyzAgentSettingTab } from "./settings";
+import { NXYZ_VIEW_TYPE, NxyzAgentView } from "./view";
 import {
 	createFileIfMissing,
 	getCurrentDateTimeString,
@@ -54,10 +55,21 @@ export default class NxyzAgentPlugin extends Plugin {
 		await this.loadSettings();
 		this.addSettingTab(new NxyzAgentSettingTab(this.app, this));
 
-		// Quick access to the most-used flow.
-		this.addRibbonIcon("bot", "nxyz agent: build context pack", () =>
-			this.buildContextPack()
+		this.registerView(
+			NXYZ_VIEW_TYPE,
+			(leaf) => new NxyzAgentView(leaf, this)
 		);
+
+		// The ribbon opens the control panel, which hosts every action.
+		this.addRibbonIcon("bot", "nxyz agent: open panel", () =>
+			this.activateView()
+		);
+
+		this.addCommand({
+			id: "open-panel",
+			name: "Open panel",
+			callback: () => this.activateView(),
+		});
 
 		this.addCommand({
 			id: "create-project-card",
@@ -110,6 +122,20 @@ export default class NxyzAgentPlugin extends Plugin {
 		await this.saveData(this.settings);
 	}
 
+	/** Open (or reveal) the control panel in the right sidebar. */
+	async activateView(): Promise<void> {
+		const { workspace } = this.app;
+		let leaf: WorkspaceLeaf | null =
+			workspace.getLeavesOfType(NXYZ_VIEW_TYPE)[0] ?? null;
+		if (!leaf) {
+			leaf = workspace.getRightLeaf(false);
+			if (leaf) {
+				await leaf.setViewState({ type: NXYZ_VIEW_TYPE, active: true });
+			}
+		}
+		if (leaf) workspace.revealLeaf(leaf);
+	}
+
 	/** The active file if it is a Markdown note, else null. */
 	private activeMarkdownFile(): TFile | null {
 		const file = this.app.workspace.getActiveFile();
@@ -117,7 +143,7 @@ export default class NxyzAgentPlugin extends Plugin {
 	}
 
 	// --- Command 1 ---------------------------------------------------------
-	private async createProjectCard(): Promise<void> {
+	async createProjectCard(): Promise<void> {
 		const name = await promptForText(this.app, {
 			title: "Create project card",
 			placeholder: "Project name",
@@ -143,8 +169,9 @@ export default class NxyzAgentPlugin extends Plugin {
 	}
 
 	// --- Command 2 ---------------------------------------------------------
-	private async buildContextPack(): Promise<void> {
-		const project = await resolveCurrentProject(this.app, this.settings);
+	async buildContextPack(preselected?: ResolvedProject): Promise<void> {
+		const project =
+			preselected ?? (await resolveCurrentProject(this.app, this.settings));
 		if (!project) {
 			new Notice("No project found — create a project card first.");
 			return;
@@ -173,8 +200,9 @@ export default class NxyzAgentPlugin extends Plugin {
 	}
 
 	// --- Command 3 ---------------------------------------------------------
-	private async copyHandoffPrompt(): Promise<void> {
-		const project = await resolveCurrentProject(this.app, this.settings);
+	async copyHandoffPrompt(preselected?: ResolvedProject): Promise<void> {
+		const project =
+			preselected ?? (await resolveCurrentProject(this.app, this.settings));
 		if (!project) {
 			new Notice("No project found — create a project card first.");
 			return;
@@ -204,8 +232,9 @@ export default class NxyzAgentPlugin extends Plugin {
 	}
 
 	// --- Command 4 ---------------------------------------------------------
-	private async appendWorkLog(): Promise<void> {
-		const project = await resolveCurrentProject(this.app, this.settings);
+	async appendWorkLog(preselected?: ResolvedProject): Promise<void> {
+		const project =
+			preselected ?? (await resolveCurrentProject(this.app, this.settings));
 		if (!project) {
 			new Notice("No project found — create a project card first.");
 			return;
@@ -232,7 +261,7 @@ export default class NxyzAgentPlugin extends Plugin {
 	}
 
 	// --- Command 5 ---------------------------------------------------------
-	private async createBuildNote(): Promise<void> {
+	async createBuildNote(): Promise<void> {
 		const active = this.activeMarkdownFile();
 		if (!active) {
 			new Notice("Open a note first to create a build note.");
@@ -264,13 +293,14 @@ export default class NxyzAgentPlugin extends Plugin {
 	}
 
 	// --- Command 6 ---------------------------------------------------------
-	private async extractTasks(): Promise<void> {
+	async extractTasks(preselected?: ResolvedProject): Promise<void> {
 		const active = this.activeMarkdownFile();
 		if (!active) {
 			new Notice("Open a note first to extract tasks.");
 			return;
 		}
-		const project = await resolveCurrentProject(this.app, this.settings);
+		const project =
+			preselected ?? (await resolveCurrentProject(this.app, this.settings));
 		if (!project) {
 			new Notice("No project found to file tasks into.");
 			return;
@@ -297,13 +327,14 @@ export default class NxyzAgentPlugin extends Plugin {
 	}
 
 	// --- Command 7 ---------------------------------------------------------
-	private async extractDecisions(): Promise<void> {
+	async extractDecisions(preselected?: ResolvedProject): Promise<void> {
 		const active = this.activeMarkdownFile();
 		if (!active) {
 			new Notice("Open a note first to extract decisions.");
 			return;
 		}
-		const project = await resolveCurrentProject(this.app, this.settings);
+		const project =
+			preselected ?? (await resolveCurrentProject(this.app, this.settings));
 		if (!project) {
 			new Notice("No project found to file decisions into.");
 			return;
