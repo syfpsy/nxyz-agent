@@ -3,6 +3,19 @@
 All notable changes to **nxyz agent** are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to [SemVer](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- Ribbon icon shortcut for **Build context pack** (the most-used flow).
+- `.gitattributes` to normalize line endings (LF in repo) and mark `main.js` as generated.
+
+### Changed
+- Task extraction now preserves a checked source box (`- [x]`) as done in `TASKS.md` instead of
+  rewriting it as an open task. Keyword lines (TODO/FIXME/…) are still written as open.
+
+### Internal
+- Removed an unused `asFile` helper from `fileUtils.ts`.
+
 ## [0.1.0] — 2026-06-08
 
 Initial local context-pack MVP.

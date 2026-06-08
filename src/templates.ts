@@ -110,8 +110,12 @@ export function tasksFileHeader(slug: string): string {
 }
 
 /** A single extracted task line, with a link back to its source note. */
-export function taskLineTemplate(task: string, sourceLink: string): string {
-	return `- [ ] ${task.trim()}  (from ${sourceLink})\n`;
+export function taskLineTemplate(
+	task: string,
+	sourceLink: string,
+	done = false
+): string {
+	return `- [${done ? "x" : " "}] ${task.trim()}  (from ${sourceLink})\n`;
 }
 
 /** One-time header written when DECISIONS.md is first created. */

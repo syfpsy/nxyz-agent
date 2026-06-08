@@ -39,7 +39,8 @@ operations · never overwrites an existing note. See [`docs/ROADMAP.md`](docs/RO
 
 ## Commands
 
-In the command palette they appear prefixed with `nxyz agent:`.
+In the command palette they appear prefixed with `nxyz agent:`. A ribbon icon (the bot) is a
+one-click shortcut to **Build context pack for current project**.
 
 | Command | What it does |
 | --- | --- |

@@ -54,6 +54,11 @@ export default class NxyzAgentPlugin extends Plugin {
 		await this.loadSettings();
 		this.addSettingTab(new NxyzAgentSettingTab(this.app, this));
 
+		// Quick access to the most-used flow.
+		this.addRibbonIcon("bot", "nxyz agent: build context pack", () =>
+			this.buildContextPack()
+		);
+
 		this.addCommand({
 			id: "create-project-card",
 			name: "Create project card",

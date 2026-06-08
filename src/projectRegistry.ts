@@ -151,12 +151,18 @@ export async function createBuildNote(
 	return await createFileIfMissing(app, path, content);
 }
 
+/** A task pulled from a note, preserving whether it was already checked off. */
+export interface ExtractedTask {
+	text: string;
+	done: boolean;
+}
+
 /** Append extracted tasks to the project's TASKS.md. Returns count written. */
 export async function appendTasks(
 	app: App,
 	settings: NxyzAgentSettings,
 	project: ResolvedProject,
-	tasks: string[],
+	tasks: ExtractedTask[],
 	sourceLink: string
 ): Promise<number> {
 	if (tasks.length === 0) return 0;
@@ -164,7 +170,8 @@ export async function appendTasks(
 		`${settings.workLogFolder}/${project.slug}/TASKS.md`
 	);
 	const body =
-		"\n" + tasks.map((t) => taskLineTemplate(t, sourceLink)).join("");
+		"\n" +
+		tasks.map((t) => taskLineTemplate(t.text, sourceLink, t.done)).join("");
 	await appendToFile(app, path, body, tasksFileHeader(project.slug));
 	return tasks.length;
 }
@@ -196,17 +203,19 @@ const HEADING_PREFIX = /^#+\s+/;
  * Extract task-like items from note content: Markdown checkboxes plus lines
  * mentioning TODO / FIXME / NEXT / Action / Follow-up. Deduped, order-preserving.
  */
-export function extractTasksFromContent(content: string): string[] {
-	const out: string[] = [];
+export function extractTasksFromContent(content: string): ExtractedTask[] {
+	const out: ExtractedTask[] = [];
 	const seen = new Set<string>();
 	for (const raw of content.split(/\r?\n/)) {
 		const line = raw.trim();
 		if (line === "") continue;
 
 		let text: string | null = null;
+		let done = false;
 		const checkbox = CHECKBOX.exec(line);
 		if (checkbox) {
 			text = (checkbox[2] ?? "").trim();
+			done = (checkbox[1] ?? "").toLowerCase() === "x";
 		} else if (TASK_KEYWORDS.test(line)) {
 			text = line.replace(HEADING_PREFIX, "").replace(LIST_PREFIX, "").trim();
 		}
@@ -215,7 +224,7 @@ export function extractTasksFromContent(content: string): string[] {
 		const key = text.toLowerCase();
 		if (seen.has(key)) continue;
 		seen.add(key);
-		out.push(text);
+		out.push({ text, done });
 	}
 	return out;
 }

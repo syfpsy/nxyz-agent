@@ -1,10 +1,4 @@
-import {
-	App,
-	TAbstractFile,
-	TFile,
-	TFolder,
-	normalizePath,
-} from "obsidian";
+import { App, TFile, TFolder, normalizePath } from "obsidian";
 import type { LinkedNote, ProjectCardMeta } from "./types";
 
 /**
@@ -198,9 +192,4 @@ export function truncateToLimit(
 	const marker = "\n\n… [truncated to fit context limit]";
 	const slice = Math.max(0, maxChars - marker.length);
 	return { text: text.slice(0, slice) + marker, truncated: true };
-}
-
-/** Narrow a possibly-null abstract file to a TFile. */
-export function asFile(file: TAbstractFile | null): TFile | null {
-	return file instanceof TFile ? file : null;
 }

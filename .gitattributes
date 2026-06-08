@@ -1,0 +1,5 @@
+# Normalize line endings: store as LF in the repo, check out native locally.
+* text=auto eol=lf
+
+# Treat the bundled output as generated (collapsed in diffs if ever committed).
+main.js linguist-generated=true

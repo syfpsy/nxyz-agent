@@ -124,12 +124,14 @@ Source note: [[<source note>]]
 ## Tasks (`Work Logs/<slug>/TASKS.md`)
 
 Header written once on creation, then append-only lines. Sources: Markdown checkboxes (`- [ ]`,
-`- [x]`) and lines containing `TODO`, `FIXME`, `NEXT`, `Action`, or `Follow-up`.
+`- [x]`) and lines containing `TODO`, `FIXME`, `NEXT`, `Action`, or `Follow-up`. A checked source
+box (`- [x]`) is preserved as done; keyword lines are written as open.
 
 ```markdown
 # Tasks — <slug>
 
 - [ ] <task text>  (from [[source note]])
+- [x] <already-done task>  (from [[source note]])
 ```
 
 ## Decisions (`Work Logs/<slug>/DECISIONS.md`)
