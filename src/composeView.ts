@@ -12,6 +12,7 @@ import type NxyzAgentPlugin from "./main";
 import type { ChatMessage } from "./types";
 import { resolveProjectNonInteractive } from "./projectRegistry";
 import {
+	CONTINUE_INSTRUCTION,
 	buildComposePrompt,
 	sanitizeNoteBaseName,
 	sanitizeReplyMarkdown,
@@ -60,6 +61,8 @@ export class NxyzAgentComposeView extends ItemView {
 	private projectContext = "";
 	private generating = false;
 	private closed = false;
+	private truncated = false;
+	private composeBase: ChatMessage[] = [];
 	private abortController?: AbortController;
 	private renderChild?: Component;
 	private previewTimer = 0;
@@ -72,6 +75,7 @@ export class NxyzAgentComposeView extends ItemView {
 	private applyBtn!: HTMLButtonElement;
 	private copyBtn!: HTMLButtonElement;
 	private clearBtn!: HTMLButtonElement;
+	private continueBtn!: HTMLButtonElement;
 	private metaEl!: HTMLElement;
 
 	constructor(leaf: WorkspaceLeaf, private readonly plugin: NxyzAgentPlugin) {
@@ -216,8 +220,16 @@ export class NxyzAgentComposeView extends ItemView {
 		this.clearBtn.addEventListener("click", () => {
 			this.sourceEl.value = "";
 			this.generatedForFile = null;
+			this.truncated = false;
+			this.updateContinueVisibility();
 			this.renderPreview();
 		});
+		this.continueBtn = footer.createEl("button", {
+			cls: "nxyz-compose-continue",
+			text: "Continue",
+		});
+		this.continueBtn.addEventListener("click", () => void this.continue());
+		this.continueBtn.hide();
 
 		this.renderPreview();
 	}
@@ -282,6 +294,16 @@ export class NxyzAgentComposeView extends ItemView {
 		this.applyBtn.disabled = generating;
 		this.copyBtn.disabled = generating;
 		this.clearBtn.disabled = generating;
+		this.continueBtn.disabled = generating;
+	}
+
+	/** Show the Continue button only when the last generation was truncated. */
+	private updateContinueVisibility(): void {
+		if (this.truncated && this.sourceEl.value.trim() !== "") {
+			this.continueBtn.show();
+		} else {
+			this.continueBtn.hide();
+		}
 	}
 
 	private async generate(): Promise<void> {
@@ -296,11 +318,6 @@ export class NxyzAgentComposeView extends ItemView {
 		}
 		this.refreshContext();
 		await this.loadProjectContext();
-		const resolved = resolveProvider(this.plugin.settings, this.override);
-		if (!resolved.ok) {
-			new Notice(resolved.error);
-			return;
-		}
 
 		let baseContent = "";
 		if (this.mode === "edit") {
@@ -325,18 +342,44 @@ export class NxyzAgentComposeView extends ItemView {
 			projectContext: this.projectContext,
 			pluginHint: this.pluginHint(),
 		});
-		const payload: ChatMessage[] = [
+		// Remember the base turns so Continue can extend from them.
+		this.composeBase = [
 			{ role: "system", content: system },
 			{ role: "user", content: user },
 		];
+		await this.runGeneration(this.composeBase, false);
+	}
 
-		this.sourceEl.value = "";
+	/** Extend a truncated page from where it left off. */
+	private async continue(): Promise<void> {
+		if (this.generating) return;
+		if (!this.truncated || this.composeBase.length === 0) return;
+		const payload: ChatMessage[] = [
+			...this.composeBase,
+			{ role: "assistant", content: this.sourceEl.value },
+			{ role: "user", content: CONTINUE_INSTRUCTION },
+		];
+		await this.runGeneration(payload, true);
+	}
+
+	/** Run a generation, appending or replacing the source; tracks truncation. */
+	private async runGeneration(
+		payload: ChatMessage[],
+		append: boolean
+	): Promise<void> {
+		const resolved = resolveProvider(this.plugin.settings, this.override);
+		if (!resolved.ok) {
+			new Notice(resolved.error);
+			return;
+		}
+		if (!append) this.sourceEl.value = "";
 		this.setGenerating(true);
 		this.abortController = new AbortController();
+		let truncated = false;
 		try {
 			if (this.plugin.settings.aiStream) {
 				try {
-					await chatStream(
+					const result = await chatStream(
 						resolved.config,
 						payload,
 						(delta) => {
@@ -345,23 +388,32 @@ export class NxyzAgentComposeView extends ItemView {
 						},
 						this.abortController.signal
 					);
+					truncated = result.truncated;
 				} catch (streamErr) {
 					if (this.abortController.signal.aborted) throw streamErr;
-					this.sourceEl.value = await chatComplete(resolved.config, payload);
+					const result = await chatComplete(resolved.config, payload);
+					this.sourceEl.value += result.text;
+					truncated = result.truncated;
 				}
 			} else {
-				this.sourceEl.value = await chatComplete(resolved.config, payload);
+				const result = await chatComplete(resolved.config, payload);
+				this.sourceEl.value += result.text;
+				truncated = result.truncated;
 			}
 		} catch (e) {
 			if (!this.abortController.signal.aborted) {
-				const msg = e instanceof Error ? e.message : String(e);
-				new Notice(msg);
+				new Notice(e instanceof Error ? e.message : String(e));
 			}
 		} finally {
 			this.abortController = undefined;
 			if (!this.closed) {
-				this.sourceEl.value = unwrapCodeFence(this.sourceEl.value);
+				// Only unwrap an enclosing fence on a fresh generation.
+				if (!append) {
+					this.sourceEl.value = unwrapCodeFence(this.sourceEl.value);
+				}
+				this.truncated = truncated;
 				this.setGenerating(false);
+				this.updateContinueVisibility();
 				this.renderPreview();
 			}
 		}

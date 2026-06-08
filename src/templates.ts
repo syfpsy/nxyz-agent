@@ -130,6 +130,10 @@ export function buildComposePrompt(params: {
 	return { system, user: parts.join("\n\n") };
 }
 
+/** Instruction used to extend a reply/page that hit the model's length limit. */
+export const CONTINUE_INSTRUCTION =
+	"Continue exactly where the previous response stopped. Do not repeat any earlier text — pick up mid-sentence if needed. Stop when the content is complete.";
+
 /** The note-taking rule embedded in cards, prompts and agent instructions. */
 export const NOTE_TAKING_LINE =
 	"Always take concise notes of what you do, so we have an efficient and reliable code history memory.";

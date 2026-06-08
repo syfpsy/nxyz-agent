@@ -18,7 +18,11 @@ import {
 	buildHandoffPrompt,
 } from "./contextPack";
 import { copyToClipboard } from "./fileUtils";
-import { demoteMarkdownHeadings, sanitizeReplyMarkdown } from "./templates";
+import {
+	CONTINUE_INSTRUCTION,
+	demoteMarkdownHeadings,
+	sanitizeReplyMarkdown,
+} from "./templates";
 import {
 	ProviderOverride,
 	chatComplete,
@@ -64,6 +68,7 @@ export class NxyzAgentChatView extends ItemView {
 	private override: ProviderOverride = {};
 	private sending = false;
 	private closed = false;
+	private lastTruncated = false;
 	private abortController?: AbortController;
 
 	/** Child component that owns the Markdown renders (unloaded on re-render). */
@@ -75,6 +80,7 @@ export class NxyzAgentChatView extends ItemView {
 	private sendBtn!: HTMLButtonElement;
 	private reloadBtn!: HTMLButtonElement;
 	private clearBtn!: HTMLButtonElement;
+	private continueBtn!: HTMLButtonElement;
 	private quickBtns: HTMLButtonElement[] = [];
 
 	constructor(leaf: WorkspaceLeaf, private readonly plugin: NxyzAgentPlugin) {
@@ -203,6 +209,15 @@ export class NxyzAgentChatView extends ItemView {
 			text: "Clear",
 		});
 		this.clearBtn.addEventListener("click", () => void this.clear());
+		this.continueBtn = header.createEl("button", {
+			cls: "nxyz-chat-btn nxyz-chat-continue",
+			text: "Continue",
+		});
+		this.continueBtn.addEventListener(
+			"click",
+			() => void this.send(CONTINUE_INSTRUCTION)
+		);
+		this.continueBtn.hide();
 
 		this.logEl = root.createDiv({ cls: "nxyz-chat-log" });
 
@@ -347,12 +362,21 @@ export class NxyzAgentChatView extends ItemView {
 		// Prevent swapping the conversation out from under an in-flight request.
 		this.reloadBtn.disabled = sending;
 		this.clearBtn.disabled = sending;
+		this.continueBtn.disabled = sending;
 		this.quickBtns.forEach((b) => (b.disabled = sending));
+	}
+
+	/** Show the Continue button only when the last reply was length-truncated. */
+	private updateContinueVisibility(): void {
+		if (this.lastTruncated) this.continueBtn.show();
+		else this.continueBtn.hide();
 	}
 
 	private async clear(): Promise<void> {
 		if (this.sending) return;
 		this.messages = [];
+		this.lastTruncated = false;
+		this.updateContinueVisibility();
 		await this.plugin.setChat(this.currentKey, this.messages);
 		this.renderMessages();
 	}
@@ -401,11 +425,12 @@ export class NxyzAgentChatView extends ItemView {
 		this.logEl.scrollTop = this.logEl.scrollHeight;
 
 		this.abortController = new AbortController();
+		let truncated = false;
 		try {
 			if (this.plugin.settings.aiStream) {
 				try {
 					let first = true;
-					await chatStream(
+					const result = await chatStream(
 						resolved.config,
 						payload,
 						(delta) => {
@@ -419,13 +444,18 @@ export class NxyzAgentChatView extends ItemView {
 						},
 						this.abortController.signal
 					);
+					truncated = result.truncated;
 				} catch (streamErr) {
 					if (this.abortController.signal.aborted) throw streamErr;
 					// Streaming failed (e.g. CORS) — fall back to a single response.
-					assistant.content = await chatComplete(resolved.config, payload);
+					const result = await chatComplete(resolved.config, payload);
+					assistant.content = result.text;
+					truncated = result.truncated;
 				}
 			} else {
-				assistant.content = await chatComplete(resolved.config, payload);
+				const result = await chatComplete(resolved.config, payload);
+				assistant.content = result.text;
+				truncated = result.truncated;
 			}
 		} catch (e) {
 			if (!this.abortController.signal.aborted) {
@@ -439,9 +469,12 @@ export class NxyzAgentChatView extends ItemView {
 			if (assistant.content.trim() === "") {
 				const idx = conversation.indexOf(assistant);
 				if (idx >= 0) conversation.splice(idx, 1);
+				truncated = false;
 			}
+			this.lastTruncated = truncated;
 			if (!this.closed) {
 				this.setSending(false);
+				this.updateContinueVisibility();
 				this.renderMessages();
 			}
 			await this.plugin.setChat(key, conversation);

@@ -30,6 +30,10 @@ All notable changes to **nxyz agent** are documented here. The format follows
   `data.json` and restored when you reopen the chat or reload its context.
 - **Markdown-rendered chat replies** plus per-message **Copy** and **Save to log** actions (the latter
   appends the reply to the project work log, with headings demoted so they don't shadow the log outline).
+- **Continue generation** — when a reply/page hits the model's output length limit (`finish_reason:
+  length`), a **Continue** button appears (chat header and Compose footer) to extend it. In Compose the
+  continuation is appended to the source; in chat it continues the conversation. Providers now report
+  truncation (`chatComplete`/`chatStream` return `{ text, truncated }`).
 - **Quick-action prompts** in the chat — one-click **Summarize / Next step / Tasks / Risks** buttons
   that send a grounded ask against the current note/project context (disabled while a reply streams).
 - **Per-project AI override** — a project card's frontmatter may set `ai_provider:` and/or `ai_model:`

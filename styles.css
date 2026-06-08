@@ -261,6 +261,12 @@ Obsidian-native variables are used so the plugin respects the active theme.
 	cursor: pointer;
 }
 
+.nxyz-chat-continue,
+.nxyz-compose-continue {
+	cursor: pointer;
+	color: var(--text-accent);
+}
+
 /* Compose view (main area) */
 .nxyz-compose {
 	display: flex;

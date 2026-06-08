@@ -132,12 +132,18 @@ function parseErrorMessage(raw: string): string {
 	return raw.slice(0, 300) || "unknown error";
 }
 
+export interface ChatResult {
+	text: string;
+	/** True when the model stopped because it hit the output length limit. */
+	truncated: boolean;
+}
+
 /** Send a chat completion and return the assistant's text. Throws on failure. */
 export async function chatComplete(
 	config: ResolvedProvider,
 	messages: ChatMessage[],
 	temperature = 0.3
-): Promise<string> {
+): Promise<ChatResult> {
 	const res = await requestUrl({
 		url: `${config.baseUrl}/chat/completions`,
 		method: "POST",
@@ -168,16 +174,20 @@ export async function chatComplete(
 		throw new Error(`${providerLabel(config.provider)} returned a non-JSON response.`);
 	}
 
-	const content = (
+	const choice = (
 		data as {
-			choices?: { message?: { content?: unknown } }[];
+			choices?: {
+				message?: { content?: unknown };
+				finish_reason?: unknown;
+			}[];
 		}
-	)?.choices?.[0]?.message?.content;
+	)?.choices?.[0];
+	const content = choice?.message?.content;
 
 	if (typeof content !== "string" || content.trim() === "") {
 		throw new Error(`${providerLabel(config.provider)} returned an empty response.`);
 	}
-	return content;
+	return { text: content, truncated: choice?.finish_reason === "length" };
 }
 
 /**
@@ -191,7 +201,7 @@ export async function chatStream(
 	onDelta: (text: string) => void,
 	signal?: AbortSignal,
 	temperature = 0.3
-): Promise<string> {
+): Promise<ChatResult> {
 	const res = await fetch(`${config.baseUrl}/chat/completions`, {
 		method: "POST",
 		headers: {
@@ -219,6 +229,7 @@ export async function chatStream(
 	const decoder = new TextDecoder();
 	let buffer = "";
 	let full = "";
+	let truncated = false;
 
 	for (;;) {
 		const { value, done } = await reader.read();
@@ -234,12 +245,19 @@ export async function chatStream(
 			if (payload === "" || payload === "[DONE]") continue;
 			try {
 				const json = JSON.parse(payload) as {
-					choices?: { delta?: { content?: unknown } }[];
+					choices?: {
+						delta?: { content?: unknown };
+						finish_reason?: unknown;
+					}[];
 				};
-				const delta = json.choices?.[0]?.delta?.content;
+				const choice = json.choices?.[0];
+				const delta = choice?.delta?.content;
 				if (typeof delta === "string" && delta.length > 0) {
 					full += delta;
 					onDelta(delta);
+				}
+				if (typeof choice?.finish_reason === "string") {
+					truncated = choice.finish_reason === "length";
 				}
 			} catch {
 				// ignore partial / non-JSON keep-alive lines
@@ -250,5 +268,5 @@ export async function chatStream(
 	if (full.trim() === "") {
 		throw new Error(`${providerLabel(config.provider)} returned an empty response.`);
 	}
-	return full;
+	return { text: full, truncated };
 }
