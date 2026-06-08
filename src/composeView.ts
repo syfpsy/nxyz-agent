@@ -24,7 +24,8 @@ import {
 	openFile,
 	overwriteFile,
 } from "./fileUtils";
-import { confirm, promptForText } from "./modals";
+import { confirm, confirmReplaceWithDiff, promptForText } from "./modals";
+import { lineDiff } from "./diff";
 import {
 	ProviderOverride,
 	chatComplete,
@@ -386,12 +387,27 @@ export class NxyzAgentComposeView extends ItemView {
 				new Notice("The note this was written for is no longer available.");
 				return;
 			}
-			const ok = await confirm(this.app, {
-				title: "Replace note contents?",
-				message: `This replaces the entire contents of "${file.basename}". If Obsidian's File Recovery core plugin is enabled you may be able to restore the previous version, but recent edits might not be snapshotted.`,
-				cta: "Replace",
-				danger: true,
-			});
+			let current = "";
+			try {
+				current = await this.app.vault.read(file);
+			} catch {
+				current = "";
+			}
+			if (current === content) {
+				new Notice("No changes to apply.");
+				return;
+			}
+			// Show a line diff before the destructive overwrite (fall back to a
+			// plain confirm if the file is too large to diff cheaply).
+			const diff = lineDiff(current, content);
+			const ok = diff
+				? await confirmReplaceWithDiff(this.app, file.basename, diff)
+				: await confirm(this.app, {
+						title: "Replace note contents?",
+						message: `This replaces the entire contents of "${file.basename}". If Obsidian's File Recovery core plugin is enabled you may be able to restore the previous version.`,
+						cta: "Replace",
+						danger: true,
+					});
 			if (!ok) return;
 			try {
 				await overwriteFile(this.app, file, content);

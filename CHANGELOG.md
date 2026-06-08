@@ -15,6 +15,7 @@ All notable changes to **nxyz agent** are documented here. The format follows
   **Apply** creates a new note (never overwrites) or replaces the active note **after a confirm
   dialog** — the saved file keeps the full raw Markdown. The edit target is pinned to the generation
   so Apply can't write to the wrong note; new-note names are sanitized (no path traversal/dotfiles).
+  Editing an existing note shows a **line diff** (added/removed) for review before the overwrite.
 - **AI chat panel (bring your own key)** — a right-sidebar chat that grounds the model in the current
   project (its handoff prompt is sent as the system message). Providers: **DeepSeek, OpenRouter,
   OpenAI** (all OpenAI-compatible). New settings: provider selector, an API key + model per provider.

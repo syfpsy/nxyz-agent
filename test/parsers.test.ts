@@ -23,6 +23,7 @@ import {
 	isAiProvider,
 } from "../src/providers";
 import { DEFAULT_SETTINGS } from "../src/types";
+import { diffStats, lineDiff } from "../src/diff";
 
 test("slugifyProjectName: spaces, casing, punctuation", () => {
 	assert.equal(slugifyProjectName("My Project"), "my-project");
@@ -231,6 +232,30 @@ test("effectiveProviderModel: per-project override precedence", () => {
 		provider: "deepseek",
 		model: "deepseek-chat",
 	});
+});
+
+test("lineDiff: marks added, removed and context lines", () => {
+	const diff = lineDiff("a\nb\nc", "a\nx\nc");
+	assert.ok(diff);
+	assert.deepEqual(diff, [
+		{ type: "context", text: "a" },
+		{ type: "remove", text: "b" },
+		{ type: "add", text: "x" },
+		{ type: "context", text: "c" },
+	]);
+	assert.deepEqual(diffStats(diff!), { added: 1, removed: 1 });
+});
+
+test("lineDiff: identical input is all context", () => {
+	const diff = lineDiff("a\nb", "a\nb");
+	assert.ok(diff);
+	assert.deepEqual(diffStats(diff!), { added: 0, removed: 0 });
+	assert.ok(diff!.every((l) => l.type === "context"));
+});
+
+test("lineDiff: pure append adds only the new lines", () => {
+	const diff = lineDiff("a\nb", "a\nb\nc\nd");
+	assert.deepEqual(diffStats(diff!), { added: 2, removed: 0 });
 });
 
 test("date helpers format the local date and time", () => {

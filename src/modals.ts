@@ -1,4 +1,6 @@
 import { App, FuzzySuggestModal, Modal, TFile } from "obsidian";
+import type { DiffLine } from "./diff";
+import { diffStats } from "./diff";
 
 /**
  * Input-only UI. Modals collect a value and resolve a Promise; they hold no
@@ -147,6 +149,73 @@ export function confirm(
 ): Promise<boolean> {
 	return new Promise((resolve) => {
 		new ConfirmModal(app, options, resolve).open();
+	});
+}
+
+/** A confirmation modal that shows a line diff before a destructive overwrite. */
+class DiffConfirmModal extends Modal {
+	private resolved = false;
+
+	constructor(
+		app: App,
+		private readonly fileName: string,
+		private readonly diff: DiffLine[],
+		private readonly resolve: (ok: boolean) => void
+	) {
+		super(app);
+	}
+
+	onOpen(): void {
+		const { contentEl, modalEl } = this;
+		modalEl.addClass("nxyz-diff-modal");
+		contentEl.createEl("h3", {
+			text: `Replace "${this.fileName}"?`,
+			cls: "nxyz-modal-title",
+		});
+		const { added, removed } = diffStats(this.diff);
+		contentEl.createEl("p", {
+			cls: "setting-item-description",
+			text: `${added} added, ${removed} removed. Removed lines are red, added lines green. If Obsidian's File Recovery core plugin is enabled you may be able to restore the previous version.`,
+		});
+
+		const box = contentEl.createDiv({ cls: "nxyz-diff" });
+		for (const line of this.diff) {
+			const prefix =
+				line.type === "add" ? "+" : line.type === "remove" ? "-" : " ";
+			box.createDiv({
+				cls: `nxyz-diff-line nxyz-diff-${line.type}`,
+				text: `${prefix} ${line.text}`,
+			});
+		}
+
+		const buttons = contentEl.createDiv({ cls: "nxyz-modal-buttons" });
+		const ok = buttons.createEl("button", {
+			text: "Replace",
+			cls: "mod-warning",
+		});
+		ok.addEventListener("click", () => {
+			this.resolved = true;
+			this.resolve(true);
+			this.close();
+		});
+		const cancel = buttons.createEl("button", { text: "Cancel" });
+		cancel.addEventListener("click", () => this.close());
+	}
+
+	onClose(): void {
+		this.contentEl.empty();
+		if (!this.resolved) this.resolve(false);
+	}
+}
+
+/** Show a diff and await whether to overwrite (`false` on dismiss). */
+export function confirmReplaceWithDiff(
+	app: App,
+	fileName: string,
+	diff: DiffLine[]
+): Promise<boolean> {
+	return new Promise((resolve) => {
+		new DiffConfirmModal(app, fileName, diff, resolve).open();
 	});
 }
 

@@ -367,3 +367,36 @@ Obsidian-native variables are used so the plugin respects the active theme.
 		flex-direction: column;
 	}
 }
+
+/* Diff confirmation modal */
+.nxyz-diff-modal {
+	width: min(900px, 90vw);
+}
+
+.nxyz-diff {
+	max-height: 50vh;
+	overflow: auto;
+	margin-bottom: var(--size-4-3);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-m);
+	font-family: var(--font-monospace);
+	font-size: var(--font-ui-smaller);
+}
+
+.nxyz-diff-line {
+	white-space: pre-wrap;
+	word-break: break-word;
+	padding: 0 var(--size-4-2);
+}
+
+.nxyz-diff-add {
+	background: rgba(70, 180, 80, 0.18);
+}
+
+.nxyz-diff-remove {
+	background: rgba(210, 70, 70, 0.18);
+}
+
+.nxyz-diff-context {
+	color: var(--text-muted);
+}
