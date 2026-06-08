@@ -49,10 +49,10 @@ deterministic core never overwrites a note; the only write that replaces a file 
 
 ## Commands
 
-In the command palette they appear prefixed with `nxyz agent:`. The ribbon icon (the bot) opens the
+In the command palette they appear prefixed with `nxyz agent:`. The bot ribbon icon opens the
 **control panel**, a right-sidebar view with the current project, one-click buttons for every action,
-and a clickable list of your project cards. Everything is local and deterministic — there is no chat
-or AI in this version.
+and a clickable list of your project cards. These commands are fully local and deterministic; the
+optional AI features (chat and Compose) are covered below.
 
 | Command | What it does |
 | --- | --- |
@@ -92,7 +92,7 @@ nxyz agent/
       TASKS.md                        ← extracted tasks
       DECISIONS.md                    ← extracted decisions
     build-notes/
-      <note-title>-2026-06-08.md      ← build notes
+      <note-title>-2026-06-08 14-30.md  ← build notes
 ```
 
 ## Compose — AI page authoring (centerpiece)
@@ -129,10 +129,10 @@ condensed context) is sent as the system message.
 ## Privacy model
 
 The deterministic core is fully local: it only reads/writes files in your vault via the Obsidian API
-and copies prompts to your clipboard — no telemetry, no network. **The AI chat is the only feature
-that leaves your machine:** when you send a message, the selected provider receives your current
-project's context and your messages. If you never enter a key or use the chat, nothing is sent
-anywhere. Your API keys live in `data.json` inside the plugin folder (not in your notes).
+and copies prompts to your clipboard — no telemetry, no network. **The AI features (chat and Compose)
+are the only things that leave your machine:** when you use them, the selected provider receives your
+current note/project context and your messages. If you never enter a key or use those features,
+nothing is sent anywhere. Your API keys live in `data.json` inside the plugin folder (not in your notes).
 
 ## Roadmap
 

@@ -220,10 +220,8 @@ Obsidian-native variables are used so the plugin respects the active theme.
 	background: var(--background-modifier-hover);
 }
 
-.nxyz-chat-thinking {
-	color: var(--text-muted);
-	font-size: var(--font-ui-smaller);
-	font-style: italic;
+.nxyz-settings-note {
+	margin-top: 0;
 }
 
 .nxyz-chat-quick {

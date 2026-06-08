@@ -13,7 +13,6 @@ interface TextInputOptions {
 	placeholder?: string;
 	cta?: string;
 	multiline?: boolean;
-	initialValue?: string;
 }
 
 /**
@@ -44,7 +43,6 @@ class TextInputModal extends Modal {
 				cls: "nxyz-modal-textarea",
 			});
 			ta.placeholder = this.options.placeholder ?? "";
-			ta.value = this.options.initialValue ?? "";
 			getValue = () => ta.value;
 			window.setTimeout(() => ta.focus(), 0);
 		} else {
@@ -53,7 +51,6 @@ class TextInputModal extends Modal {
 				cls: "nxyz-modal-input",
 			});
 			input.placeholder = this.options.placeholder ?? "";
-			input.value = this.options.initialValue ?? "";
 			input.addEventListener("keydown", (e) => {
 				if (e.key === "Enter") {
 					e.preventDefault();

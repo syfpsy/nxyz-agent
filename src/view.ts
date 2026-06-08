@@ -1,4 +1,4 @@
-import { ItemView, WorkspaceLeaf } from "obsidian";
+import { ItemView, WorkspaceLeaf, normalizePath } from "obsidian";
 import type NxyzAgentPlugin from "./main";
 import {
 	listProjectCards,
@@ -32,16 +32,34 @@ export class NxyzAgentView extends ItemView {
 	}
 
 	async onOpen(): Promise<void> {
-		// Re-render whenever the context or the registry changes.
+		// Re-render on context changes…
 		this.registerEvent(
 			this.app.workspace.on("active-leaf-change", () => this.render())
 		);
 		this.registerEvent(
 			this.app.workspace.on("file-open", () => this.render())
 		);
-		this.registerEvent(this.app.vault.on("create", () => this.render()));
-		this.registerEvent(this.app.vault.on("delete", () => this.render()));
-		this.registerEvent(this.app.vault.on("rename", () => this.render()));
+		// …and on registry-folder changes only (not every vault write).
+		const touchesRegistry = (path: string): boolean => {
+			const r = normalizePath(this.plugin.settings.projectRegistryFolder);
+			const p = normalizePath(path);
+			return p === r || p.startsWith(`${r}/`);
+		};
+		this.registerEvent(
+			this.app.vault.on("create", (f) => {
+				if (touchesRegistry(f.path)) this.render();
+			})
+		);
+		this.registerEvent(
+			this.app.vault.on("delete", (f) => {
+				if (touchesRegistry(f.path)) this.render();
+			})
+		);
+		this.registerEvent(
+			this.app.vault.on("rename", (f, oldPath) => {
+				if (touchesRegistry(f.path) || touchesRegistry(oldPath)) this.render();
+			})
+		);
 		this.render();
 	}
 

@@ -16,6 +16,7 @@ import {
 	demoteMarkdownHeadings,
 	sanitizeNoteBaseName,
 	sanitizeReplyMarkdown,
+	truncateForCompose,
 	unwrapCodeFence,
 } from "../src/templates";
 import {
@@ -189,6 +190,30 @@ test("unwrapCodeFence: strips an enclosing markdown fence, keeps real code", () 
 	assert.equal(unwrapCodeFence("# Title\n\n```js\ncode\n```"), "# Title\n\n```js\ncode\n```");
 	// A typed code fence (e.g. ```ts) is not treated as a wrapper.
 	assert.equal(unwrapCodeFence("```ts\nconst a = 1\n```"), "```ts\nconst a = 1\n```");
+});
+
+test("demoteMarkdownHeadings: does not touch '#' lines inside code fences", () => {
+	const md = ["## Heading", "```bash", "# load config", "echo hi", "```", "### Sub"].join(
+		"\n"
+	);
+	const out = demoteMarkdownHeadings(md);
+	assert.ok(out.includes("##### Heading")); // real heading demoted
+	assert.ok(out.includes("# load config")); // comment in fence untouched
+	assert.ok(out.includes("###### Sub"));
+});
+
+test("truncateForCompose: result never exceeds maxChars", () => {
+	const r = truncateForCompose("x".repeat(500), 80);
+	assert.ok(r.length <= 80, `length ${r.length} should be <= 80`);
+	assert.ok(r.includes("truncated"));
+	assert.equal(truncateForCompose("short", 80), "short");
+});
+
+test("isIgnored: multi-segment fragments match as a sub-path", () => {
+	assert.equal(isIgnored("a/b/c.md", ["a/b"]), true);
+	assert.equal(isIgnored("x/a/b/c.md", ["a/b"]), true);
+	assert.equal(isIgnored("a/bc/d.md", ["a/b"]), false);
+	assert.equal(isIgnored("notes/x.md", [".obsidian"]), false);
 });
 
 test("isAiProvider: only known providers pass", () => {

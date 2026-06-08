@@ -1,4 +1,4 @@
-import { Notice, Plugin, TFile, WorkspaceLeaf, normalizePath } from "obsidian";
+import { Notice, Plugin, WorkspaceLeaf, normalizePath } from "obsidian";
 import {
 	ChatMessage,
 	DEFAULT_SETTINGS,
@@ -10,8 +10,10 @@ import { NXYZ_VIEW_TYPE, NxyzAgentView } from "./view";
 import { NXYZ_CHAT_VIEW_TYPE, NxyzAgentChatView } from "./chatView";
 import { NXYZ_COMPOSE_VIEW_TYPE, NxyzAgentComposeView } from "./composeView";
 import {
+	activeMarkdownFile,
 	copyToClipboard,
 	createFileIfMissing,
+	errorMessage,
 	getCurrentDateTimeString,
 	getFrontmatter,
 	openFile,
@@ -204,12 +206,6 @@ export default class NxyzAgentPlugin extends Plugin {
 		workspace.revealLeaf(leaf);
 	}
 
-	/** The active file if it is a Markdown note, else null. */
-	private activeMarkdownFile(): TFile | null {
-		const file = this.app.workspace.getActiveFile();
-		return file && file.extension === "md" ? file : null;
-	}
-
 	// --- Command 1 ---------------------------------------------------------
 	async createProjectCard(): Promise<void> {
 		const name = await promptForText(this.app, {
@@ -330,7 +326,7 @@ export default class NxyzAgentPlugin extends Plugin {
 
 	// --- Command 5 ---------------------------------------------------------
 	async createBuildNote(): Promise<void> {
-		const active = this.activeMarkdownFile();
+		const active = activeMarkdownFile(this.app);
 		if (!active) {
 			new Notice("Open a note first to create a build note.");
 			return;
@@ -362,7 +358,7 @@ export default class NxyzAgentPlugin extends Plugin {
 
 	// --- Command 6 ---------------------------------------------------------
 	async extractTasks(preselected?: ResolvedProject): Promise<void> {
-		const active = this.activeMarkdownFile();
+		const active = activeMarkdownFile(this.app);
 		if (!active) {
 			new Notice("Open a note first to extract tasks.");
 			return;
@@ -396,7 +392,7 @@ export default class NxyzAgentPlugin extends Plugin {
 
 	// --- Command 7 ---------------------------------------------------------
 	async extractDecisions(preselected?: ResolvedProject): Promise<void> {
-		const active = this.activeMarkdownFile();
+		const active = activeMarkdownFile(this.app);
 		if (!active) {
 			new Notice("Open a note first to extract decisions.");
 			return;
@@ -427,9 +423,4 @@ export default class NxyzAgentPlugin extends Plugin {
 			new Notice(`Could not extract decisions: ${errorMessage(e)}`);
 		}
 	}
-}
-
-/** Safe error-to-string for Notice messages. */
-function errorMessage(e: unknown): string {
-	return e instanceof Error ? e.message : String(e);
 }

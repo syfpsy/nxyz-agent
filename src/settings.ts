@@ -148,12 +148,11 @@ export class NxyzAgentSettingTab extends PluginSettingTab {
 		// --- AI (bring your own key) -----------------------------------------
 		new Setting(containerEl).setName("AI (bring your own key)").setHeading();
 
-		const privacy = containerEl.createEl("p", {
-			cls: "setting-item-description",
+		containerEl.createEl("p", {
+			cls: "setting-item-description nxyz-settings-note",
 			text:
-				"Keys are stored locally in this plugin's data.json and are sent only to the provider you select when you use the chat. The chat sends the current project's context to that provider.",
+				"Keys are stored locally in this plugin's data.json and are sent only to the provider you select when you use the AI features (chat / Compose). The current note and project context are sent to that provider.",
 		});
-		privacy.style.marginTop = "0";
 
 		new Setting(containerEl)
 			.setName("Provider")

@@ -40,7 +40,7 @@ export async function assembleContext(
 	settings: NxyzAgentSettings,
 	project: ResolvedProject
 ): Promise<ContextAssembly> {
-	const cardContent = await app.vault.read(project.file);
+	const cardContent = await app.vault.cachedRead(project.file);
 
 	let activeNote: ContextAssembly["activeNote"] = null;
 	if (settings.includeActiveNote) {
@@ -51,7 +51,10 @@ export async function assembleContext(
 			!isIgnored(active.path, settings.ignoredFolders)
 		) {
 			try {
-				activeNote = { file: active, content: await app.vault.read(active) };
+				activeNote = {
+					file: active,
+					content: await app.vault.cachedRead(active),
+				};
 			} catch {
 				activeNote = null;
 			}

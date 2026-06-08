@@ -3,6 +3,32 @@
 All notable changes to **nxyz agent** are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to [SemVer](https://semver.org/).
 
+## [Unreleased]
+
+### Fixed
+- Compose: a stream→non-streaming fallback could duplicate the partially-streamed text; the final
+  content is now taken from the authoritative full reply.
+- Heading demotion when saving a chat reply to the work log no longer rewrites `#` comment lines
+  inside fenced code blocks.
+- Streaming: a final SSE event arriving without a trailing newline is no longer dropped.
+- `truncateForCompose` now respects its character cap (it could exceed it by the marker length).
+- Ignored-folder matching now also matches multi-segment fragments (e.g. `a/b`), not just single segments.
+- Build notes are stamped to the minute, so capturing the same note twice in a day no longer no-ops.
+- Chat error replies are surfaced via Notice only — they are no longer persisted to history or
+  re-sent to the provider on the next turn.
+
+### Changed
+- Chat: when streaming is off (uncancellable), the send button shows a disabled "Working…" instead of
+  a "Stop" that did nothing.
+- Control panel re-renders only on changes inside the registry folder, not on every vault write.
+- README corrected: the Commands and Privacy sections no longer imply the plugin has no AI/network use.
+
+### Internal
+- Shared `streamOrComplete`, `errorMessage`, and `activeMarkdownFile` helpers remove duplicated
+  streaming/error/active-file logic across the chat, compose, and main modules.
+- Use `cachedRead` for context assembly; drop dead CSS, an unused modal option, a redundant re-export,
+  and an inline style (moved to a CSS class).
+
 ## [0.1.1] — 2026-06-08
 
 ### Changed

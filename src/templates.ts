@@ -49,11 +49,25 @@ export function sanitizeNoteBaseName(name: string): string {
 		.trim();
 }
 
-/** Shift every Markdown heading down by `by` levels (capped at h6). */
+/**
+ * Shift every Markdown heading down by `by` levels (capped at h6), skipping
+ * lines inside fenced code blocks so `# comment` lines in code aren't mangled.
+ */
 export function demoteMarkdownHeadings(md: string, by = 3): string {
-	return md.replace(/^(#{1,6})(\s)/gm, (_m, hashes: string, space: string) => {
-		return "#".repeat(Math.min(6, hashes.length + by)) + space;
-	});
+	let inFence = false;
+	return md
+		.split("\n")
+		.map((line) => {
+			if (/^\s*(```|~~~)/.test(line)) {
+				inFence = !inFence;
+				return line;
+			}
+			if (inFence) return line;
+			return line.replace(/^(#{1,6})(\s)/, (_m, hashes: string, space: string) =>
+				"#".repeat(Math.min(6, hashes.length + by)) + space
+			);
+		})
+		.join("\n");
 }
 
 /**
@@ -85,11 +99,11 @@ export function unwrapCodeFence(md: string): string {
 	return m ? (m[1] ?? md) : md;
 }
 
-/** Hard-cap helper for embedding context in the Compose prompt. */
+/** Hard-cap helper for embedding context in the Compose prompt (<= maxChars). */
 export function truncateForCompose(text: string, maxChars: number): string {
-	return text.length <= maxChars
-		? text
-		: text.slice(0, maxChars) + "\n… [truncated]";
+	if (text.length <= maxChars) return text;
+	const marker = "\n… [truncated]";
+	return text.slice(0, Math.max(0, maxChars - marker.length)) + marker;
 }
 
 /** Build the Compose system + user messages for page authoring/editing. */

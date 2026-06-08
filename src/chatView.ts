@@ -3,7 +3,6 @@ import {
 	ItemView,
 	MarkdownRenderer,
 	Notice,
-	TFile,
 	WorkspaceLeaf,
 } from "obsidian";
 import type NxyzAgentPlugin from "./main";
@@ -17,7 +16,11 @@ import {
 	buildActiveNotePrompt,
 	buildHandoffPrompt,
 } from "./contextPack";
-import { copyToClipboard } from "./fileUtils";
+import {
+	activeMarkdownFile,
+	copyToClipboard,
+	errorMessage,
+} from "./fileUtils";
 import {
 	CONTINUE_INSTRUCTION,
 	demoteMarkdownHeadings,
@@ -25,11 +28,10 @@ import {
 } from "./templates";
 import {
 	ProviderOverride,
-	chatComplete,
-	chatStream,
 	effectiveProviderModel,
 	providerLabel,
 	resolveProvider,
+	streamOrComplete,
 } from "./providers";
 
 export const NXYZ_CHAT_VIEW_TYPE = "nxyz-agent-chat-view";
@@ -110,12 +112,6 @@ export class NxyzAgentChatView extends ItemView {
 		await this.loadContext();
 	}
 
-	/** The active file if it is a Markdown note, else null. */
-	private activeMarkdownFile(): TFile | null {
-		const f = this.app.workspace.getActiveFile();
-		return f && f.extension === "md" ? f : null;
-	}
-
 	async onClose(): Promise<void> {
 		this.closed = true;
 		this.abortController?.abort();
@@ -144,7 +140,7 @@ export class NxyzAgentChatView extends ItemView {
 	 */
 	private async refreshContext(): Promise<void> {
 		const project = this.boundProject;
-		const active = this.activeMarkdownFile();
+		const active = activeMarkdownFile(this.app);
 		const maxChars = this.plugin.settings.maxContextChars;
 
 		if (project) {
@@ -357,8 +353,13 @@ export class NxyzAgentChatView extends ItemView {
 
 	private setSending(sending: boolean): void {
 		this.sending = sending;
-		this.sendBtn.setText(sending ? "Stop" : "Send");
-		this.sendBtn.toggleClass("mod-warning", sending);
+		// Only the streaming path is cancellable (requestUrl can't abort).
+		const cancellable = this.plugin.settings.aiStream;
+		this.sendBtn.setText(
+			sending ? (cancellable ? "Stop" : "Working…") : "Send"
+		);
+		this.sendBtn.toggleClass("mod-warning", sending && cancellable);
+		this.sendBtn.disabled = sending && !cancellable;
 		// Prevent swapping the conversation out from under an in-flight request.
 		this.reloadBtn.disabled = sending;
 		this.clearBtn.disabled = sending;
@@ -426,47 +427,35 @@ export class NxyzAgentChatView extends ItemView {
 
 		this.abortController = new AbortController();
 		let truncated = false;
+		let errored = false;
 		try {
-			if (this.plugin.settings.aiStream) {
-				try {
-					let first = true;
-					const result = await chatStream(
-						resolved.config,
-						payload,
-						(delta) => {
-							if (first) {
-								contentEl.setText("");
-								first = false;
-							}
-							assistant.content += delta;
-							contentEl.setText(assistant.content);
-							this.logEl.scrollTop = this.logEl.scrollHeight;
-						},
-						this.abortController.signal
-					);
-					truncated = result.truncated;
-				} catch (streamErr) {
-					if (this.abortController.signal.aborted) throw streamErr;
-					// Streaming failed (e.g. CORS) — fall back to a single response.
-					const result = await chatComplete(resolved.config, payload);
-					assistant.content = result.text;
-					truncated = result.truncated;
-				}
-			} else {
-				const result = await chatComplete(resolved.config, payload);
-				assistant.content = result.text;
-				truncated = result.truncated;
-			}
+			let first = true;
+			const result = await streamOrComplete(resolved.config, payload, {
+				stream: this.plugin.settings.aiStream,
+				onDelta: (delta) => {
+					if (first) {
+						contentEl.setText("");
+						first = false;
+					}
+					assistant.content += delta;
+					contentEl.setText(assistant.content);
+					this.logEl.scrollTop = this.logEl.scrollHeight;
+				},
+				signal: this.abortController.signal,
+			});
+			// `result.text` is authoritative (covers the stream→complete fallback).
+			assistant.content = result.text;
+			truncated = result.truncated;
 		} catch (e) {
 			if (!this.abortController.signal.aborted) {
-				const msg = e instanceof Error ? e.message : String(e);
-				assistant.content = `⚠️ ${msg}`;
-				new Notice(msg);
+				errored = true;
+				new Notice(errorMessage(e));
 			}
 		} finally {
 			this.abortController = undefined;
-			// Drop an assistant turn that produced nothing (e.g. stopped early).
-			if (assistant.content.trim() === "") {
+			// Drop turns that produced nothing or errored — errors are surfaced via
+			// Notice and never persisted or re-sent to the provider.
+			if (errored || assistant.content.trim() === "") {
 				const idx = conversation.indexOf(assistant);
 				if (idx >= 0) conversation.splice(idx, 1);
 				truncated = false;

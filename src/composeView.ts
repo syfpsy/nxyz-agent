@@ -20,8 +20,10 @@ import {
 	unwrapCodeFence,
 } from "./templates";
 import {
+	activeMarkdownFile,
 	copyToClipboard,
 	createFileIfMissing,
+	errorMessage,
 	openFile,
 	overwriteFile,
 } from "./fileUtils";
@@ -29,11 +31,10 @@ import { confirm, confirmReplaceWithDiff, promptForText } from "./modals";
 import { lineDiff } from "./diff";
 import {
 	ProviderOverride,
-	chatComplete,
-	chatStream,
 	effectiveProviderModel,
 	providerLabel,
 	resolveProvider,
+	streamOrComplete,
 } from "./providers";
 
 export const NXYZ_COMPOSE_VIEW_TYPE = "nxyz-agent-compose-view";
@@ -96,7 +97,7 @@ export class NxyzAgentComposeView extends ItemView {
 
 	async onOpen(): Promise<void> {
 		// Default to editing whatever note is open, else authoring a new one.
-		this.mode = this.activeMarkdownFile() ? "edit" : "new";
+		this.mode = activeMarkdownFile(this.app) ? "edit" : "new";
 		this.renderShell();
 		// Keep the edit target + label tracking the open note.
 		this.registerEvent(
@@ -111,11 +112,6 @@ export class NxyzAgentComposeView extends ItemView {
 		this.closed = true;
 		this.abortController?.abort();
 		window.clearTimeout(this.previewTimer);
-	}
-
-	private activeMarkdownFile(): TFile | null {
-		const f = this.app.workspace.getActiveFile();
-		return f && f.extension === "md" ? f : null;
 	}
 
 	private pluginHint(): string {
@@ -137,7 +133,7 @@ export class NxyzAgentComposeView extends ItemView {
 		this.override = project
 			? { provider: project.meta.ai_provider, model: project.meta.ai_model }
 			: {};
-		if (this.mode === "edit") this.baseFile = this.activeMarkdownFile();
+		if (this.mode === "edit") this.baseFile = activeMarkdownFile(this.app);
 		this.updateMeta();
 	}
 
@@ -372,37 +368,29 @@ export class NxyzAgentComposeView extends ItemView {
 			new Notice(resolved.error);
 			return;
 		}
+		window.clearTimeout(this.previewTimer); // don't let a pending render race
 		if (!append) this.sourceEl.value = "";
+		// Baseline = everything before this run (empty for a fresh generation, the
+		// existing source for a continue). The final source is set from the
+		// authoritative reply so a stream→complete fallback can't duplicate text.
+		const baseline = this.sourceEl.value;
 		this.setGenerating(true);
 		this.abortController = new AbortController();
 		let truncated = false;
 		try {
-			if (this.plugin.settings.aiStream) {
-				try {
-					const result = await chatStream(
-						resolved.config,
-						payload,
-						(delta) => {
-							this.sourceEl.value += delta;
-							this.sourceEl.scrollTop = this.sourceEl.scrollHeight;
-						},
-						this.abortController.signal
-					);
-					truncated = result.truncated;
-				} catch (streamErr) {
-					if (this.abortController.signal.aborted) throw streamErr;
-					const result = await chatComplete(resolved.config, payload);
-					this.sourceEl.value += result.text;
-					truncated = result.truncated;
-				}
-			} else {
-				const result = await chatComplete(resolved.config, payload);
-				this.sourceEl.value += result.text;
-				truncated = result.truncated;
-			}
+			const result = await streamOrComplete(resolved.config, payload, {
+				stream: this.plugin.settings.aiStream,
+				onDelta: (delta) => {
+					this.sourceEl.value += delta;
+					this.sourceEl.scrollTop = this.sourceEl.scrollHeight;
+				},
+				signal: this.abortController.signal,
+			});
+			this.sourceEl.value = baseline + result.text;
+			truncated = result.truncated;
 		} catch (e) {
 			if (!this.abortController.signal.aborted) {
-				new Notice(e instanceof Error ? e.message : String(e));
+				new Notice(errorMessage(e));
 			}
 		} finally {
 			this.abortController = undefined;
@@ -466,9 +454,7 @@ export class NxyzAgentComposeView extends ItemView {
 				await openFile(this.app, file);
 				new Notice(`Updated ${file.path}`);
 			} catch (e) {
-				new Notice(
-					`Could not update: ${e instanceof Error ? e.message : String(e)}`
-				);
+				new Notice(`Could not update: ${errorMessage(e)}`);
 			}
 			return;
 		}
@@ -500,9 +486,7 @@ export class NxyzAgentComposeView extends ItemView {
 			await openFile(this.app, file);
 			new Notice(`Created ${file.path}`);
 		} catch (e) {
-			new Notice(
-				`Could not save: ${e instanceof Error ? e.message : String(e)}`
-			);
+			new Notice(`Could not save: ${errorMessage(e)}`);
 		}
 	}
 

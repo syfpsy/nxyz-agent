@@ -1,10 +1,5 @@
 import { App, TFile, TFolder, normalizePath } from "obsidian";
-import {
-	NxyzAgentSettings,
-	ProjectCardMeta,
-	ProjectStatus,
-	ResolvedProject,
-} from "./types";
+import { NxyzAgentSettings, ProjectStatus, ResolvedProject } from "./types";
 import {
 	appendToFile,
 	createFileIfMissing,
@@ -155,9 +150,12 @@ export async function createBuildNote(
 ): Promise<{ file: TFile; created: boolean }> {
 	const date = getCurrentDateString();
 	const title = `${sourceNote.basename} — ${date}`;
-	const fileSlug = slugifyProjectName(title) || "build-note";
+	// Stamp the filename to the minute so re-capturing the same note in one day
+	// creates a new build note instead of silently no-op'ing as "already exists".
+	const stamp = getCurrentDateTimeString().replace(/[: ]/g, "-");
+	const fileSlug = slugifyProjectName(sourceNote.basename) || "build-note";
 	const path = normalizePath(
-		`${settings.workLogFolder}/build-notes/${fileSlug}.md`
+		`${settings.workLogFolder}/build-notes/${fileSlug}-${stamp}.md`
 	);
 	const sourceLink = `[[${sourceNote.basename}]]`;
 	const content = buildNoteTemplate(
@@ -274,6 +272,3 @@ export function extractDecisionsFromContent(content: string): string[] {
 	}
 	return out;
 }
-
-/** Expose the meta type for callers that want typed frontmatter. */
-export type { ProjectCardMeta };

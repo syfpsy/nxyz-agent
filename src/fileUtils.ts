@@ -126,11 +126,27 @@ export function getCurrentDateTimeString(d = new Date()): string {
 
 /** True if a path falls inside any ignored folder fragment. */
 export function isIgnored(path: string, ignored: string[]): boolean {
-	const segments = normalizePath(path).split("/");
+	const p = normalizePath(path);
+	const segments = p.split("/");
 	return ignored.some((ig) => {
 		const name = normalizePath(ig).replace(/\/$/, "");
-		return name !== "" && segments.includes(name);
+		if (name === "") return false;
+		// Single segment matches anywhere in the path; a multi-segment fragment
+		// (e.g. "a/b") matches as a path prefix or a contained sub-path.
+		if (!name.includes("/")) return segments.includes(name);
+		return p === name || p.startsWith(`${name}/`) || p.includes(`/${name}/`);
 	});
+}
+
+/** Format an unknown thrown value as a message string. */
+export function errorMessage(e: unknown): string {
+	return e instanceof Error ? e.message : String(e);
+}
+
+/** The active file if it is a Markdown note, else null. */
+export function activeMarkdownFile(app: App): TFile | null {
+	const f = app.workspace.getActiveFile();
+	return f && f.extension === "md" ? f : null;
 }
 
 /**

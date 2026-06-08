@@ -231,6 +231,32 @@ export async function chatStream(
 	let full = "";
 	let truncated = false;
 
+	const processLine = (line: string): void => {
+		const trimmed = line.trim();
+		if (!trimmed.startsWith("data:")) return; // skip comments / blanks
+		const payload = trimmed.slice(5).trim();
+		if (payload === "" || payload === "[DONE]") return;
+		try {
+			const json = JSON.parse(payload) as {
+				choices?: {
+					delta?: { content?: unknown };
+					finish_reason?: unknown;
+				}[];
+			};
+			const choice = json.choices?.[0];
+			const delta = choice?.delta?.content;
+			if (typeof delta === "string" && delta.length > 0) {
+				full += delta;
+				onDelta(delta);
+			}
+			if (typeof choice?.finish_reason === "string") {
+				truncated = choice.finish_reason === "length";
+			}
+		} catch {
+			// ignore partial / non-JSON keep-alive lines
+		}
+	};
+
 	for (;;) {
 		const { value, done } = await reader.read();
 		if (done) break;
@@ -238,35 +264,36 @@ export async function chatStream(
 
 		const lines = buffer.split("\n");
 		buffer = lines.pop() ?? "";
-		for (const line of lines) {
-			const trimmed = line.trim();
-			if (!trimmed.startsWith("data:")) continue; // skip comments / blanks
-			const payload = trimmed.slice(5).trim();
-			if (payload === "" || payload === "[DONE]") continue;
-			try {
-				const json = JSON.parse(payload) as {
-					choices?: {
-						delta?: { content?: unknown };
-						finish_reason?: unknown;
-					}[];
-				};
-				const choice = json.choices?.[0];
-				const delta = choice?.delta?.content;
-				if (typeof delta === "string" && delta.length > 0) {
-					full += delta;
-					onDelta(delta);
-				}
-				if (typeof choice?.finish_reason === "string") {
-					truncated = choice.finish_reason === "length";
-				}
-			} catch {
-				// ignore partial / non-JSON keep-alive lines
-			}
-		}
+		for (const line of lines) processLine(line);
 	}
+	// A final SSE event may arrive without a trailing newline.
+	if (buffer.trim() !== "") processLine(buffer);
 
 	if (full.trim() === "") {
 		throw new Error(`${providerLabel(config.provider)} returned an empty response.`);
 	}
 	return { text: full, truncated };
+}
+
+/**
+ * Stream when enabled, transparently falling back to a single (non-streaming)
+ * request if streaming fails for a non-abort reason. The returned `text` is the
+ * authoritative full reply — callers should set their final content from it
+ * (the `onDelta` updates are for live display only).
+ */
+export async function streamOrComplete(
+	config: ResolvedProvider,
+	messages: ChatMessage[],
+	opts: { stream: boolean; onDelta: (text: string) => void; signal: AbortSignal }
+): Promise<ChatResult> {
+	if (opts.stream) {
+		try {
+			return await chatStream(config, messages, opts.onDelta, opts.signal);
+		} catch (e) {
+			if (opts.signal.aborted) throw e;
+			// Streaming failed (e.g. CORS) — fall back to a single response.
+			return await chatComplete(config, messages);
+		}
+	}
+	return await chatComplete(config, messages);
 }
