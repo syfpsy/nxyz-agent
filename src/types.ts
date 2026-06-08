@@ -50,6 +50,8 @@ export interface NxyzAgentSettings {
 	openaiModel: string;
 	/** Stream chat responses token-by-token (falls back to a single response). */
 	aiStream: boolean;
+	/** LLM temperature (0 = deterministic/focused, 1 = creative). Default 0.3. */
+	aiTemperature: number;
 }
 
 export const DEFAULT_SETTINGS: NxyzAgentSettings = {
@@ -70,6 +72,7 @@ export const DEFAULT_SETTINGS: NxyzAgentSettings = {
 	openrouterModel: "openai/gpt-4o-mini",
 	openaiModel: "gpt-4o-mini",
 	aiStream: true,
+	aiTemperature: 0.3,
 };
 
 /**

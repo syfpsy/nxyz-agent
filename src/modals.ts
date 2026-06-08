@@ -13,6 +13,8 @@ interface TextInputOptions {
 	placeholder?: string;
 	cta?: string;
 	multiline?: boolean;
+	/** Pre-fill the input with this value (cursor placed at end). */
+	initialValue?: string;
 }
 
 /**
@@ -51,6 +53,9 @@ class TextInputModal extends Modal {
 				cls: "nxyz-modal-input",
 			});
 			input.placeholder = this.options.placeholder ?? "";
+			if (this.options.initialValue) {
+				input.value = this.options.initialValue;
+			}
 			input.addEventListener("keydown", (e) => {
 				if (e.key === "Enter") {
 					e.preventDefault();
@@ -58,7 +63,11 @@ class TextInputModal extends Modal {
 				}
 			});
 			getValue = () => input.value;
-			window.setTimeout(() => input.focus(), 0);
+			window.setTimeout(() => {
+				input.focus();
+				// Place cursor at end so the user can backspace or append.
+				input.setSelectionRange(input.value.length, input.value.length);
+			}, 0);
 		}
 
 		const buttons = contentEl.createDiv({ cls: "nxyz-modal-buttons" });

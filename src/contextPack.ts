@@ -153,7 +153,7 @@ export async function saveContextPack(
 	project: ResolvedProject,
 	doc: string
 ): Promise<TFile> {
-	const stamp = getCurrentDateTimeString().replace(/:/g, "-");
+	const stamp = getCurrentDateTimeString().replace(/[: ]/g, "-");
 	const basePath = normalizePath(
 		`${settings.contextPackFolder}/${project.slug}-${stamp}.md`
 	);

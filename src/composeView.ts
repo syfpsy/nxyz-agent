@@ -2,6 +2,7 @@ import {
 	Component,
 	ItemView,
 	MarkdownRenderer,
+	MarkdownView,
 	Notice,
 	TFile,
 	TFolder,
@@ -14,6 +15,7 @@ import { resolveProjectNonInteractive } from "./projectRegistry";
 import {
 	CONTINUE_INSTRUCTION,
 	buildComposePrompt,
+	extractFirstHeading,
 	sanitizeNoteBaseName,
 	sanitizeReplyMarkdown,
 	truncateForCompose,
@@ -71,12 +73,14 @@ export class NxyzAgentComposeView extends ItemView {
 	private instructionEl!: HTMLTextAreaElement;
 	private modeEl!: HTMLSelectElement;
 	private genBtn!: HTMLButtonElement;
+	private loadNoteBtn!: HTMLButtonElement;
 	private sourceEl!: HTMLTextAreaElement;
 	private previewEl!: HTMLElement;
 	private applyBtn!: HTMLButtonElement;
 	private copyBtn!: HTMLButtonElement;
 	private clearBtn!: HTMLButtonElement;
 	private continueBtn!: HTMLButtonElement;
+	private charCountEl!: HTMLElement;
 	private metaEl!: HTMLElement;
 
 	constructor(leaf: WorkspaceLeaf, private readonly plugin: NxyzAgentPlugin) {
@@ -189,13 +193,23 @@ export class NxyzAgentComposeView extends ItemView {
 			text: "Generate",
 		});
 		this.genBtn.addEventListener("click", () => void this.generate());
+		this.loadNoteBtn = actions.createEl("button", {
+			cls: "nxyz-compose-load-note",
+			text: "Load active note",
+		});
+		this.loadNoteBtn.title =
+			"Paste the active note's content into the source pane for manual editing or to include in your instruction.";
+		this.loadNoteBtn.addEventListener("click", () => void this.loadActiveNote());
 
 		const body = root.createDiv({ cls: "nxyz-compose-body" });
 		const left = body.createDiv({ cls: "nxyz-compose-pane" });
 		left.createDiv({ cls: "nxyz-compose-pane-title", text: "Source" });
 		this.sourceEl = left.createEl("textarea", { cls: "nxyz-compose-source" });
 		this.sourceEl.placeholder = "Generated Markdown appears here — editable.";
-		this.sourceEl.addEventListener("input", () => this.schedulePreview());
+		this.sourceEl.addEventListener("input", () => {
+			this.schedulePreview();
+			this.updateCharCount();
+		});
 
 		const right = body.createDiv({ cls: "nxyz-compose-pane" });
 		right.createDiv({ cls: "nxyz-compose-pane-title", text: "Preview" });
@@ -217,9 +231,11 @@ export class NxyzAgentComposeView extends ItemView {
 			this.sourceEl.value = "";
 			this.generatedForFile = null;
 			this.truncated = false;
+			this.updateCharCount();
 			this.updateContinueVisibility();
 			this.renderPreview();
 		});
+		this.charCountEl = footer.createSpan({ cls: "nxyz-compose-charcount" });
 		this.continueBtn = footer.createEl("button", {
 			cls: "nxyz-compose-continue",
 			text: "Continue",
@@ -227,7 +243,41 @@ export class NxyzAgentComposeView extends ItemView {
 		this.continueBtn.addEventListener("click", () => void this.continue());
 		this.continueBtn.hide();
 
+		this.updateCharCount();
 		this.renderPreview();
+	}
+
+	private updateCharCount(): void {
+		if (!this.charCountEl) return;
+		const len = this.sourceEl.value.length;
+		if (len === 0) {
+			this.charCountEl.setText("");
+			return;
+		}
+		this.charCountEl.setText(`${len.toLocaleString()} chars`);
+	}
+
+	/** Load the active note content into the source pane for manual editing. */
+	private async loadActiveNote(): Promise<void> {
+		const file = activeMarkdownFile(this.app);
+		if (!file) {
+			new Notice("No active note to load.");
+			return;
+		}
+		try {
+			// Prefer the live (unsaved) editor content when the note is open.
+			const liveView = this.app.workspace.getActiveViewOfType(MarkdownView);
+			const content =
+				liveView?.file?.path === file.path
+					? liveView.editor.getValue()
+					: await this.app.vault.cachedRead(file);
+			this.sourceEl.value = content;
+			this.updateCharCount();
+			this.schedulePreview();
+			new Notice(`Loaded "${file.basename}" into source.`);
+		} catch (e) {
+			new Notice(`Could not load note: ${errorMessage(e)}`);
+		}
 	}
 
 	private updateMeta(): void {
@@ -287,6 +337,7 @@ export class NxyzAgentComposeView extends ItemView {
 		this.genBtn.toggleClass("mod-warning", generating && cancellable);
 		this.genBtn.disabled = generating && !cancellable;
 		this.modeEl.disabled = generating;
+		this.loadNoteBtn.disabled = generating;
 		this.applyBtn.disabled = generating;
 		this.copyBtn.disabled = generating;
 		this.clearBtn.disabled = generating;
@@ -380,6 +431,7 @@ export class NxyzAgentComposeView extends ItemView {
 		try {
 			const result = await streamOrComplete(resolved.config, payload, {
 				stream: this.plugin.settings.aiStream,
+				temperature: this.plugin.settings.aiTemperature,
 				onDelta: (delta) => {
 					this.sourceEl.value += delta;
 					this.sourceEl.scrollTop = this.sourceEl.scrollHeight;
@@ -400,6 +452,7 @@ export class NxyzAgentComposeView extends ItemView {
 					this.sourceEl.value = unwrapCodeFence(this.sourceEl.value);
 				}
 				this.truncated = truncated;
+				this.updateCharCount();
 				this.setGenerating(false);
 				this.updateContinueVisibility();
 				this.renderPreview();
@@ -429,7 +482,13 @@ export class NxyzAgentComposeView extends ItemView {
 			}
 			let current = "";
 			try {
-				current = await this.app.vault.read(file);
+				// Use live (unsaved) editor content so the diff reflects any edits the
+				// user made in the editor after the last save — not the stale disk copy.
+				const liveView = this.app.workspace.getActiveViewOfType(MarkdownView);
+				current =
+					liveView?.file?.path === file.path
+						? liveView.editor.getValue()
+						: await this.app.vault.read(file);
 			} catch {
 				current = "";
 			}
@@ -459,11 +518,15 @@ export class NxyzAgentComposeView extends ItemView {
 			return;
 		}
 
-		// New note.
+		// New note — pre-fill the dialog with the first heading from the generated content.
+		const suggested = sanitizeNoteBaseName(
+			extractFirstHeading(content) ?? ""
+		);
 		const name = await promptForText(this.app, {
 			title: "Save page as",
 			placeholder: "Note name",
 			cta: "Save",
+			initialValue: suggested,
 		});
 		if (!name || name.trim() === "") return;
 		const base = sanitizeNoteBaseName(name);

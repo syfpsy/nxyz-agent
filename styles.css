@@ -304,10 +304,17 @@ Obsidian-native variables are used so the plugin respects the active theme.
 .nxyz-compose-actions {
 	display: flex;
 	gap: var(--size-2-2);
+	align-items: center;
 }
 
 .nxyz-compose-gen {
 	cursor: pointer;
+}
+
+.nxyz-compose-load-note {
+	cursor: pointer;
+	font-size: var(--font-ui-smaller);
+	color: var(--text-muted);
 }
 
 .nxyz-compose-body {
@@ -360,10 +367,18 @@ Obsidian-native variables are used so the plugin respects the active theme.
 .nxyz-compose-footer {
 	display: flex;
 	gap: var(--size-2-2);
+	align-items: center;
 }
 
 .nxyz-compose-apply {
 	cursor: pointer;
+}
+
+.nxyz-compose-charcount {
+	margin-left: auto;
+	font-size: var(--font-ui-smaller);
+	color: var(--text-faint);
+	white-space: nowrap;
 }
 
 @media (max-width: 700px) {

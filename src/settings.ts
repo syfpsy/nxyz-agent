@@ -255,5 +255,21 @@ export class NxyzAgentSettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				})
 			);
+
+		new Setting(containerEl)
+			.setName("Temperature")
+			.setDesc(
+				"Controls creativity: 0 = focused and deterministic, 1 = creative and varied. Default: 0.3."
+			)
+			.addSlider((sl) =>
+				sl
+					.setLimits(0, 1, 0.05)
+					.setValue(s.aiTemperature)
+					.setDynamicTooltip()
+					.onChange(async (v) => {
+						s.aiTemperature = v;
+						await this.plugin.saveSettings();
+					})
+			);
 	}
 }

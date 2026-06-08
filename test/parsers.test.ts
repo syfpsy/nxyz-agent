@@ -14,6 +14,7 @@ import {
 } from "../src/projectRegistry";
 import {
 	demoteMarkdownHeadings,
+	extractFirstHeading,
 	sanitizeNoteBaseName,
 	sanitizeReplyMarkdown,
 	truncateForCompose,
@@ -216,6 +217,31 @@ test("isIgnored: multi-segment fragments match as a sub-path", () => {
 	assert.equal(isIgnored("notes/x.md", [".obsidian"]), false);
 });
 
+test("extractFirstHeading: returns text of the first heading", () => {
+	assert.equal(extractFirstHeading("# My Title"), "My Title");
+	assert.equal(extractFirstHeading("## Sub Heading"), "Sub Heading");
+	assert.equal(extractFirstHeading("intro text\n## Section"), "Section");
+	assert.equal(extractFirstHeading("no headings here"), null);
+});
+
+test("extractFirstHeading: skips blank headings, honours first non-blank", () => {
+	// A blank heading (only spaces after the #) is skipped.
+	assert.equal(extractFirstHeading("#   \n## Real"), "Real");
+});
+
+test("extractFirstHeading: frontmatter does not confuse it", () => {
+	// YAML --- delimiters and key: value lines don't look like headings.
+	assert.equal(
+		extractFirstHeading("---\ntitle: foo\n---\n# Doc Title"),
+		"Doc Title"
+	);
+});
+
+test("extractFirstHeading: handles h3–h6, first heading wins", () => {
+	assert.equal(extractFirstHeading("### Deep\n# Top"), "Deep");
+	assert.equal(extractFirstHeading("###### Bottom level"), "Bottom level");
+});
+
 test("isAiProvider: only known providers pass", () => {
 	assert.equal(isAiProvider("deepseek"), true);
 	assert.equal(isAiProvider("openrouter"), true);
@@ -281,6 +307,11 @@ test("lineDiff: identical input is all context", () => {
 test("lineDiff: pure append adds only the new lines", () => {
 	const diff = lineDiff("a\nb", "a\nb\nc\nd");
 	assert.deepEqual(diffStats(diff!), { added: 2, removed: 0 });
+});
+
+test("DEFAULT_SETTINGS: temperature is 0.3 and aiStream is true", () => {
+	assert.equal(DEFAULT_SETTINGS.aiTemperature, 0.3);
+	assert.equal(DEFAULT_SETTINGS.aiStream, true);
 });
 
 test("date helpers format the local date and time", () => {

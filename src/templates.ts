@@ -33,6 +33,20 @@ export function sanitizeReplyMarkdown(md: string): string {
 }
 
 /**
+ * Return the text of the first Markdown heading in `md` (stripping the `#`
+ * prefix), or `null` if the document contains no headings. Skips headings whose
+ * text is blank after trimming. Used to pre-fill note names in Compose.
+ */
+export function extractFirstHeading(md: string): string | null {
+	for (const line of md.split("\n")) {
+		const m = /^#{1,6}\s+(.+)$/.exec(line.trimEnd());
+		const text = m ? (m[1] ?? "").trim() : "";
+		if (text) return text;
+	}
+	return null;
+}
+
+/**
  * Make a user-entered note name safe to use as a single filename: no folder
  * separators, traversal, dotfiles, or OS-illegal characters. Returns "" when
  * nothing usable remains (callers should re-prompt).

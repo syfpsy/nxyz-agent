@@ -284,16 +284,23 @@ export async function chatStream(
 export async function streamOrComplete(
 	config: ResolvedProvider,
 	messages: ChatMessage[],
-	opts: { stream: boolean; onDelta: (text: string) => void; signal: AbortSignal }
+	opts: {
+		stream: boolean;
+		onDelta: (text: string) => void;
+		signal: AbortSignal;
+		/** LLM temperature. Defaults to 0.3 when omitted. */
+		temperature?: number;
+	}
 ): Promise<ChatResult> {
+	const temp = opts.temperature ?? 0.3;
 	if (opts.stream) {
 		try {
-			return await chatStream(config, messages, opts.onDelta, opts.signal);
+			return await chatStream(config, messages, opts.onDelta, opts.signal, temp);
 		} catch (e) {
 			if (opts.signal.aborted) throw e;
 			// Streaming failed (e.g. CORS) — fall back to a single response.
-			return await chatComplete(config, messages);
+			return await chatComplete(config, messages, temp);
 		}
 	}
-	return await chatComplete(config, messages);
+	return await chatComplete(config, messages, temp);
 }

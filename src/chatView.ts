@@ -432,6 +432,7 @@ export class NxyzAgentChatView extends ItemView {
 			let first = true;
 			const result = await streamOrComplete(resolved.config, payload, {
 				stream: this.plugin.settings.aiStream,
+				temperature: this.plugin.settings.aiTemperature,
 				onDelta: (delta) => {
 					if (first) {
 						contentEl.setText("");

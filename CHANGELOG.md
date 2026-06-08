@@ -5,7 +5,31 @@ All notable changes to **nxyz agent** are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- **Compose: "Load active note" button** — populates the source pane with the active note's content
+  in one click, without touching the AI. Useful for manual editing or to include the note in an
+  instruction (e.g. "clean up the grammar in this page").
+- **Compose: live character count** — the footer now shows the source pane length in real time so
+  you can see how large the generated page is.
+- **Compose: auto-suggest note name from first heading** — the "Save page as" dialog is pre-filled
+  with the first `#` heading found in the generated content; edit or accept.
+- **Temperature setting** — the LLM temperature (0 = deterministic, 1 = creative) is now a slider
+  in **Settings → nxyz agent → AI → Temperature** (default 0.3). Previously hardcoded.
+
 ### Fixed
+- **Compose diff now compares against live (unsaved) editor content** — previously the overwrite diff
+  read the saved disk version, so edits you'd made in the editor but not yet saved would look like
+  additions from the AI. Now it reads the live editor value when the note is open.
+- `saveContextPack` datetime stamps now strip spaces as well as colons (the file was named
+  `my-project-2026-06-08 14-30.md`; now correctly `my-project-2026-06-08-14-30.md`).
+
+### Internal
+- `extractFirstHeading` helper in `templates.ts`; `initialValue` option in `promptForText`.
+- Temperature is threaded through `streamOrComplete` opts instead of being a separate argument.
+
+---
+
+### Fixed (from previous pass — included in this release)
 - Compose: a stream→non-streaming fallback could duplicate the partially-streamed text; the final
   content is now taken from the authoritative full reply.
 - Heading demotion when saving a chat reply to the work log no longer rewrites `#` comment lines
@@ -17,13 +41,13 @@ All notable changes to **nxyz agent** are documented here. The format follows
 - Chat error replies are surfaced via Notice only — they are no longer persisted to history or
   re-sent to the provider on the next turn.
 
-### Changed
+### Changed (from previous pass)
 - Chat: when streaming is off (uncancellable), the send button shows a disabled "Working…" instead of
   a "Stop" that did nothing.
 - Control panel re-renders only on changes inside the registry folder, not on every vault write.
 - README corrected: the Commands and Privacy sections no longer imply the plugin has no AI/network use.
 
-### Internal
+### Internal (from previous pass)
 - Shared `streamOrComplete`, `errorMessage`, and `activeMarkdownFile` helpers remove duplicated
   streaming/error/active-file logic across the chat, compose, and main modules.
 - Use `cachedRead` for context assembly; drop dead CSS, an unused modal option, a redundant re-export,
