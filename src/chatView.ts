@@ -3,15 +3,20 @@ import {
 	ItemView,
 	MarkdownRenderer,
 	Notice,
+	TFile,
 	WorkspaceLeaf,
 } from "obsidian";
 import type NxyzAgentPlugin from "./main";
-import type { ChatMessage } from "./types";
+import type { ChatMessage, ResolvedProject } from "./types";
 import {
 	appendWorkLogEntry,
 	resolveProjectNonInteractive,
 } from "./projectRegistry";
-import { assembleContext, buildHandoffPrompt } from "./contextPack";
+import {
+	assembleContext,
+	buildActiveNotePrompt,
+	buildHandoffPrompt,
+} from "./contextPack";
 import { copyToClipboard } from "./fileUtils";
 import { demoteMarkdownHeadings, sanitizeReplyMarkdown } from "./templates";
 import {
@@ -37,7 +42,9 @@ const GENERAL_KEY = "_general";
 export class NxyzAgentChatView extends ItemView {
 	private messages: ChatMessage[] = [];
 	private systemContext = "";
+	private boundProject: ResolvedProject | null = null;
 	private projectName: string | null = null;
+	private activeNoteName: string | null = null;
 	private currentKey = GENERAL_KEY;
 	private sourcePath = "";
 	private override: ProviderOverride = {};
@@ -73,7 +80,19 @@ export class NxyzAgentChatView extends ItemView {
 
 	async onOpen(): Promise<void> {
 		this.renderShell();
+		// Keep context in sync with whatever note the user opens.
+		this.registerEvent(
+			this.app.workspace.on("file-open", () => {
+				if (!this.sending) void this.refreshContext();
+			})
+		);
 		await this.loadContext();
+	}
+
+	/** The active file if it is a Markdown note, else null. */
+	private activeMarkdownFile(): TFile | null {
+		const f = this.app.workspace.getActiveFile();
+		return f && f.extension === "md" ? f : null;
 	}
 
 	async onClose(): Promise<void> {
@@ -81,47 +100,75 @@ export class NxyzAgentChatView extends ItemView {
 		this.abortController?.abort();
 	}
 
-	/** Rebuild the system context and load history for the current project. */
+	/** Bind the project + load its history, then build the live context. */
 	private async loadContext(): Promise<void> {
 		if (this.sending) {
 			new Notice("Stop or finish the current reply first.");
 			return;
 		}
-		const project = resolveProjectNonInteractive(
+		this.boundProject = resolveProjectNonInteractive(
 			this.app,
 			this.plugin.settings
 		);
+		this.currentKey = this.boundProject?.slug ?? GENERAL_KEY;
+		this.messages = this.plugin.getChat(this.currentKey).slice();
+		await this.refreshContext();
+		this.renderMessages();
+	}
+
+	/**
+	 * Rebuild the system context from the bound project plus the LIVE active
+	 * note, so the chat always reflects the note the user currently has open
+	 * (even when there is no project). Does not touch history.
+	 */
+	private async refreshContext(): Promise<void> {
+		const project = this.boundProject;
+		const active = this.activeMarkdownFile();
+		const maxChars = this.plugin.settings.maxContextChars;
+
 		if (project) {
 			this.projectName = project.name;
-			this.currentKey = project.slug;
 			this.sourcePath = project.file.path;
 			this.override = {
 				provider: project.meta.ai_provider,
 				model: project.meta.ai_model,
 			};
+			this.activeNoteName =
+				active && active.path !== project.file.path ? active.basename : null;
 			try {
+				// Force-include the active note so the chat always sees the open doc.
 				const assembly = await assembleContext(
 					this.app,
-					this.plugin.settings,
+					{ ...this.plugin.settings, includeActiveNote: true },
 					project
 				);
-				this.systemContext = buildHandoffPrompt(
-					assembly,
-					this.plugin.settings.maxContextChars
-				).prompt;
+				this.systemContext = buildHandoffPrompt(assembly, maxChars).prompt;
+			} catch {
+				this.systemContext = "";
+			}
+		} else if (active) {
+			this.projectName = null;
+			this.sourcePath = active.path;
+			this.override = {};
+			this.activeNoteName = active.basename;
+			try {
+				const content = await this.app.vault.cachedRead(active);
+				this.systemContext = buildActiveNotePrompt(
+					active.basename,
+					content,
+					maxChars
+				);
 			} catch {
 				this.systemContext = "";
 			}
 		} else {
 			this.projectName = null;
-			this.currentKey = GENERAL_KEY;
 			this.sourcePath = "";
 			this.override = {};
+			this.activeNoteName = null;
 			this.systemContext = "";
 		}
-		this.messages = this.plugin.getChat(this.currentKey).slice();
 		this.updateContextLabel();
-		this.renderMessages();
 	}
 
 	private renderShell(): void {
@@ -169,12 +216,18 @@ export class NxyzAgentChatView extends ItemView {
 			this.plugin.settings,
 			this.override
 		);
-		const label = `${providerLabel(provider)} · ${model}`;
-		this.contextEl.setText(
-			this.projectName
-				? `Context: ${this.projectName} · ${label}`
-				: `No project context · ${label}`
-		);
+		const pm = `${providerLabel(provider)} · ${model}`;
+		let ctx: string;
+		if (this.projectName && this.activeNoteName) {
+			ctx = `${this.projectName} + ${this.activeNoteName}`;
+		} else if (this.projectName) {
+			ctx = this.projectName;
+		} else if (this.activeNoteName) {
+			ctx = `note: ${this.activeNoteName}`;
+		} else {
+			ctx = "no note/project open";
+		}
+		this.contextEl.setText(`Context: ${ctx} · ${pm}`);
 	}
 
 	/** Fresh child component so previous Markdown renders are unloaded. */
@@ -286,6 +339,9 @@ export class NxyzAgentChatView extends ItemView {
 		}
 		const text = this.inputEl.value.trim();
 		if (text === "") return;
+
+		// Re-read the open note so the reply reflects the current document.
+		await this.refreshContext();
 
 		const resolved = resolveProvider(this.plugin.settings, this.override);
 		if (!resolved.ok) {

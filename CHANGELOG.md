@@ -35,6 +35,10 @@ All notable changes to **nxyz agent** are documented here. The format follows
 - `.gitattributes` to normalize line endings (LF in repo) and mark `main.js` as generated.
 
 ### Changed
+- **Chat now sees your open note, live.** The chat context is rebuilt from the currently active note
+  on every note switch and before each send (previously captured once at open), it always includes
+  the open document even when the global "include active note" toggle is off, and it works **with no
+  project** (the open note alone becomes the context). The header shows `project + note · provider · model`.
 - The ribbon icon now **opens the control panel** (which hosts every action) instead of directly
   building a context pack.
 - Task extraction now preserves a checked source box (`- [x]`) as done in `TASKS.md` instead of

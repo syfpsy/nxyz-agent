@@ -117,6 +117,19 @@ export function buildContextPack(
 	};
 }
 
+/** A minimal system prompt grounded in just the active note (no project). */
+export function buildActiveNotePrompt(
+	name: string,
+	content: string,
+	maxChars: number
+): string {
+	const condensed = truncateToLimit(
+		`[Current note — ${name}]\n${content.trim()}`,
+		maxChars
+	).text;
+	return agentPromptTemplate(condensed);
+}
+
 /** Build only the agent handoff prompt (no document). */
 export function buildHandoffPrompt(
 	a: ContextAssembly,
