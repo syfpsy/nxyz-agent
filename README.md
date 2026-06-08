@@ -3,10 +3,16 @@
 A lean, **local-first** Obsidian plugin that turns your vault into structured project memory and an
 AI-agent handoff system. For each project it keeps a Markdown **project card**, builds a focused
 **context pack**, and prepares a clean **agent prompt** you can paste into Claude Code, Codex, Cursor,
-ChatGPT, or any coding agent.
+ChatGPT, or any coding agent. It also includes an **optional, bring-your-own-key AI layer** — a chat
+and an AI page-authoring view (**Compose**).
 
-It is **not** a "chat with my notes" plugin. There is no LLM call, no embeddings, no vector database,
-and no network access in this version — just disciplined Markdown and clipboard workflows.
+It is **not** a generic "chat with my notes" plugin. The core (cards, context packs, work logs,
+task/decision extraction, control panel) is fully local and makes **no** network requests.
+
+> **Network use.** The optional AI features (chat and Compose) send the current note/project context
+> and your messages to the **LLM provider you choose** (DeepSeek, OpenRouter, or OpenAI) — and only
+> then. Nothing is sent unless you add an API key and use those features. Your key is stored locally
+> in the plugin's `data.json`. No telemetry, no cloud backend, no other network access.
 
 ## What it does
 
@@ -18,12 +24,16 @@ and no network access in this version — just disciplined Markdown and clipboar
 - **Create build notes** — capture the current note as a structured build note.
 - **Extract tasks & decisions** — pull checkboxes / TODO-style lines and decision statements out of a
   note into per-project `TASKS.md` / `DECISIONS.md` (append-only, never overwritten).
+- **Control panel** — a right-sidebar view with the current project, one-click actions, and your card list.
+- **AI chat** *(optional, BYOK)* — a project-grounded chat; see "AI chat" below.
+- **Compose** *(optional, BYOK)* — author or rewrite rich Obsidian pages with AI; see "Compose" below.
 
-## What it does NOT do (yet)
+## What it does NOT do
 
 No embeddings · no vector DB · no PDF/image parsing · no autonomous agent runtime · no shell
-execution · no cloud backend · no login/accounts · no whole-vault scans · no destructive file
-operations · never overwrites an existing note. See [`docs/ROADMAP.md`](docs/ROADMAP.md).
+execution · no telemetry · no cloud backend · no login/accounts · no whole-vault scans. The
+deterministic core never overwrites a note; the only write that replaces a file is an explicit
+**Compose → Apply** (shown as a diff, with confirmation). See [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
 ## Install (local development)
 
