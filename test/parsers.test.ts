@@ -14,7 +14,9 @@ import {
 } from "../src/projectRegistry";
 import {
 	demoteMarkdownHeadings,
+	sanitizeNoteBaseName,
 	sanitizeReplyMarkdown,
+	unwrapCodeFence,
 } from "../src/templates";
 import {
 	effectiveProviderModel,
@@ -152,12 +154,40 @@ test("sanitizeReplyMarkdown: neutralizes transclusion embeds, keeps links", () =
 	assert.equal(sanitizeReplyMarkdown("see [[Other Note]]"), "see [[Other Note]]");
 });
 
+test("sanitizeReplyMarkdown: neutralizes exec fences nested in callouts/blockquotes", () => {
+	assert.ok(sanitizeReplyMarkdown("> ```dataviewjs\n> x\n> ```").startsWith("> ```text"));
+	assert.ok(sanitizeReplyMarkdown(">```dataviewjs").startsWith(">```text"));
+	const callout = sanitizeReplyMarkdown("> [!info]\n> ```dataviewjs\n> code\n> ```");
+	assert.ok(callout.includes("> ```text"));
+	assert.ok(!callout.includes("dataviewjs"));
+});
+
+test("sanitizeNoteBaseName: strips separators, traversal, dotfiles, illegal chars", () => {
+	assert.equal(sanitizeNoteBaseName("My Note"), "My Note");
+	assert.equal(sanitizeNoteBaseName("My Note.md"), "My Note");
+	assert.equal(sanitizeNoteBaseName("foo/bar"), "foo bar");
+	assert.equal(sanitizeNoteBaseName("../../escape"), "escape");
+	assert.equal(sanitizeNoteBaseName(".hidden"), "hidden");
+	assert.equal(sanitizeNoteBaseName('a:b*c?"d|e<f>g'), "abcdefg");
+	assert.equal(sanitizeNoteBaseName("well-known plan"), "well-known plan");
+	assert.equal(sanitizeNoteBaseName("..."), "");
+});
+
 test("demoteMarkdownHeadings: shifts headings down, caps at h6", () => {
 	assert.equal(demoteMarkdownHeadings("## Summary"), "##### Summary");
 	assert.equal(demoteMarkdownHeadings("#### Deep"), "###### Deep");
 	assert.equal(demoteMarkdownHeadings("###### Already"), "###### Already");
 	// Non-heading lines and hashtags mid-line are untouched.
 	assert.equal(demoteMarkdownHeadings("not #a heading"), "not #a heading");
+});
+
+test("unwrapCodeFence: strips an enclosing markdown fence, keeps real code", () => {
+	assert.equal(unwrapCodeFence("```markdown\n# Title\n\ntext\n```"), "# Title\n\ntext");
+	assert.equal(unwrapCodeFence("```\n# Title\n```"), "# Title");
+	// A page that isn't fully wrapped is left alone.
+	assert.equal(unwrapCodeFence("# Title\n\n```js\ncode\n```"), "# Title\n\n```js\ncode\n```");
+	// A typed code fence (e.g. ```ts) is not treated as a wrapper.
+	assert.equal(unwrapCodeFence("```ts\nconst a = 1\n```"), "```ts\nconst a = 1\n```");
 });
 
 test("isAiProvider: only known providers pass", () => {

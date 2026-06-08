@@ -14,6 +14,7 @@ src/
   view.ts             NxyzAgentView — right-sidebar control panel (ItemView)
   providers.ts        OpenAI-compatible chat client (DeepSeek/OpenRouter/OpenAI)
   chatView.ts         NxyzAgentChatView — AI chat panel (ItemView)
+  composeView.ts      NxyzAgentComposeView — AI page authoring/editing (ItemView)
   main.ts             plugin lifecycle + command wiring (thin callbacks)
 ```
 

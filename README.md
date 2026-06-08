@@ -85,6 +85,20 @@ or AI in this version.
       <note-title>-2026-06-08.md      ← build notes
 ```
 
+## Compose — AI page authoring (centerpiece)
+
+Open **Compose** (the wand ribbon icon, the *Compose page with AI* command, or the control-panel
+button) to have the agent write rich Obsidian pages for you:
+
+- Choose **New note** or **Edit active note**, describe the page (or how to rewrite the open one), and
+  **Generate**. The agent uses Obsidian-flavored Markdown — callouts, Mermaid diagrams, math, tables,
+  task lists, internal links/embeds, footnotes, and Dataview/Templater blocks when those plugins are
+  installed — guided by a built-in features guide.
+- **Editable source on the left, live preview on the right.** The preview is sanitized (Mermaid/math/
+  callouts render; LLM plugin code stays inert until you save and open the real note).
+- **Apply** creates a new note (never overwrites) or replaces the active note **after a confirmation**.
+  The saved file keeps the full raw Markdown with all features. Nothing is written without your Apply.
+
 ## AI chat (bring your own key)
 
 Optional. Open the **AI chat** panel (chat ribbon icon, the *Open AI chat* command, or the control

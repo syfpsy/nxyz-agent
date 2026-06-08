@@ -6,6 +6,15 @@ All notable changes to **nxyz agent** are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- **Compose — AI page authoring/editing (centerpiece).** A main-area view (wand ribbon, the
+  **Compose page with AI** command, or the control-panel button) where you describe a page or ask to
+  rewrite the open note. The agent authors rich Obsidian Markdown (callouts, Mermaid, math, tables,
+  task lists, links/embeds, footnotes, and Dataview/Templater blocks when those plugins are detected),
+  guided by a built-in features cheat-sheet. **Editable source + live preview**; the preview is
+  sanitized (structure/Mermaid/math render; plugin code stays inert until you save & open the note).
+  **Apply** creates a new note (never overwrites) or replaces the active note **after a confirm
+  dialog** — the saved file keeps the full raw Markdown. The edit target is pinned to the generation
+  so Apply can't write to the wrong note; new-note names are sanitized (no path traversal/dotfiles).
 - **AI chat panel (bring your own key)** — a right-sidebar chat that grounds the model in the current
   project (its handoff prompt is sent as the system message). Providers: **DeepSeek, OpenRouter,
   OpenAI** (all OpenAI-compatible). New settings: provider selector, an API key + model per provider.
@@ -48,10 +57,13 @@ All notable changes to **nxyz agent** are documented here. The format follows
 - Author/developer name set to `nxyz` in `manifest.json` and `package.json`.
 
 ### Security
-- Model replies are sanitized before Markdown rendering: executable code fences
-  (`dataviewjs`/`dataview`/`js-engine`/`templater`/`meta-bind`…) are relabelled inert and `![[…]]`
-  transclusions are neutralized, so a reply can't run plugin code or inline arbitrary notes. Link
-  resolution is anchored to the project card rather than the vault root.
+- Model output is sanitized before Markdown rendering (chat replies and the Compose preview):
+  executable code fences (`dataviewjs`/`dataview`/`js-engine`/`templater`/`meta-bind`…) are relabelled
+  inert and `![[…]]` transclusions are neutralized, so rendered model output can't run plugin code or
+  inline arbitrary notes. This now also covers fences **nested inside callouts/blockquotes**
+  (`> ```dataviewjs`), which previously slipped through. Link resolution is anchored to the source note.
+- Compose prompts place untrusted content (the project card, the edited note) in the user turn as
+  delimited reference data, not the system role.
 
 ### Fixed
 - Symbol-only project / build-note names that slugify to an empty string now fall back to

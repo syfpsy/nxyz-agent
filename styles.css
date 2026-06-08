@@ -260,3 +260,110 @@ Obsidian-native variables are used so the plugin respects the active theme.
 .nxyz-chat-send {
 	cursor: pointer;
 }
+
+/* Compose view (main area) */
+.nxyz-compose {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	padding: var(--size-4-3);
+	gap: var(--size-4-2);
+	overflow: hidden;
+}
+
+.nxyz-compose-bar {
+	display: flex;
+	flex-direction: column;
+	gap: var(--size-2-2);
+}
+
+.nxyz-compose-row {
+	display: flex;
+	align-items: center;
+	gap: var(--size-4-2);
+	flex-wrap: wrap;
+}
+
+.nxyz-compose-meta {
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+}
+
+.nxyz-compose-instruction {
+	width: 100%;
+	min-height: 3.5em;
+	max-height: 10em;
+	resize: vertical;
+	font-family: inherit;
+}
+
+.nxyz-compose-actions {
+	display: flex;
+	gap: var(--size-2-2);
+}
+
+.nxyz-compose-gen {
+	cursor: pointer;
+}
+
+.nxyz-compose-body {
+	display: flex;
+	gap: var(--size-4-2);
+	flex: 1 1 auto;
+	min-height: 0;
+}
+
+.nxyz-compose-pane {
+	display: flex;
+	flex-direction: column;
+	flex: 1 1 50%;
+	min-width: 0;
+	min-height: 0;
+	gap: var(--size-2-2);
+}
+
+.nxyz-compose-pane-title {
+	font-size: var(--font-ui-smaller);
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	color: var(--text-muted);
+}
+
+.nxyz-compose-source {
+	flex: 1 1 auto;
+	width: 100%;
+	resize: none;
+	font-family: var(--font-monospace);
+	font-size: var(--font-ui-small);
+	white-space: pre;
+	overflow: auto;
+}
+
+.nxyz-compose-preview {
+	flex: 1 1 auto;
+	overflow: auto;
+	padding: var(--size-4-2);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-m);
+	background: var(--background-primary);
+}
+
+.nxyz-compose-empty {
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+}
+
+.nxyz-compose-footer {
+	display: flex;
+	gap: var(--size-2-2);
+}
+
+.nxyz-compose-apply {
+	cursor: pointer;
+}
+
+@media (max-width: 700px) {
+	.nxyz-compose-body {
+		flex-direction: column;
+	}
+}

@@ -73,6 +73,18 @@ export async function openFile(app: App, file: TFile): Promise<void> {
 }
 
 /**
+ * Overwrite a file's full contents. This is destructive, so callers MUST get
+ * explicit user confirmation (with a preview) first — never call it silently.
+ */
+export async function overwriteFile(
+	app: App,
+	file: TFile,
+	content: string
+): Promise<void> {
+	await app.vault.modify(file, content);
+}
+
+/**
  * Read a file's parsed frontmatter from the metadata cache.
  * Note: the cache can be briefly stale right after create/modify — callers that
  * need just-written frontmatter should read+parse the content instead.

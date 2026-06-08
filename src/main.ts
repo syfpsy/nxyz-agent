@@ -8,6 +8,7 @@ import {
 import { NxyzAgentSettingTab } from "./settings";
 import { NXYZ_VIEW_TYPE, NxyzAgentView } from "./view";
 import { NXYZ_CHAT_VIEW_TYPE, NxyzAgentChatView } from "./chatView";
+import { NXYZ_COMPOSE_VIEW_TYPE, NxyzAgentComposeView } from "./composeView";
 import {
 	copyToClipboard,
 	createFileIfMissing,
@@ -50,6 +51,10 @@ export default class NxyzAgentPlugin extends Plugin {
 			NXYZ_CHAT_VIEW_TYPE,
 			(leaf) => new NxyzAgentChatView(leaf, this)
 		);
+		this.registerView(
+			NXYZ_COMPOSE_VIEW_TYPE,
+			(leaf) => new NxyzAgentComposeView(leaf, this)
+		);
 
 		// The ribbon opens the control panel, which hosts every action.
 		this.addRibbonIcon("bot", "nxyz agent: open panel", () =>
@@ -57,6 +62,9 @@ export default class NxyzAgentPlugin extends Plugin {
 		);
 		this.addRibbonIcon("message-circle", "nxyz agent: open AI chat", () =>
 			this.activateChatView()
+		);
+		this.addRibbonIcon("wand-2", "nxyz agent: compose page with AI", () =>
+			this.activateComposeView()
 		);
 
 		this.addCommand({
@@ -69,6 +77,12 @@ export default class NxyzAgentPlugin extends Plugin {
 			id: "open-chat",
 			name: "Open AI chat",
 			callback: () => this.activateChatView(),
+		});
+
+		this.addCommand({
+			id: "compose-page",
+			name: "Compose page with AI",
+			callback: () => this.activateComposeView(),
 		});
 
 		this.addCommand({
@@ -175,6 +189,19 @@ export default class NxyzAgentPlugin extends Plugin {
 	/** Open (or reveal) the AI chat panel in the right sidebar. */
 	async activateChatView(): Promise<void> {
 		await this.revealView(NXYZ_CHAT_VIEW_TYPE);
+	}
+
+	/** Open (or reveal) the Compose view in a main-area tab (needs room). */
+	async activateComposeView(): Promise<void> {
+		const { workspace } = this.app;
+		const existing = workspace.getLeavesOfType(NXYZ_COMPOSE_VIEW_TYPE)[0];
+		if (existing) {
+			workspace.revealLeaf(existing);
+			return;
+		}
+		const leaf = workspace.getLeaf(true);
+		await leaf.setViewState({ type: NXYZ_COMPOSE_VIEW_TYPE, active: true });
+		workspace.revealLeaf(leaf);
 	}
 
 	/** The active file if it is a Markdown note, else null. */

@@ -94,6 +94,62 @@ export function promptForText(
 	});
 }
 
+interface ConfirmOptions {
+	title: string;
+	message: string;
+	cta?: string;
+	danger?: boolean;
+}
+
+/** A yes/no confirmation modal. Resolves false on dismiss. */
+class ConfirmModal extends Modal {
+	private resolved = false;
+
+	constructor(
+		app: App,
+		private readonly options: ConfirmOptions,
+		private readonly resolve: (ok: boolean) => void
+	) {
+		super(app);
+	}
+
+	onOpen(): void {
+		const { contentEl } = this;
+		contentEl.createEl("h3", {
+			text: this.options.title,
+			cls: "nxyz-modal-title",
+		});
+		contentEl.createEl("p", { text: this.options.message });
+		const buttons = contentEl.createDiv({ cls: "nxyz-modal-buttons" });
+		const ok = buttons.createEl("button", {
+			text: this.options.cta ?? "Confirm",
+			cls: this.options.danger ? "mod-warning" : "mod-cta",
+		});
+		ok.addEventListener("click", () => {
+			this.resolved = true;
+			this.resolve(true);
+			this.close();
+		});
+		const cancel = buttons.createEl("button", { text: "Cancel" });
+		cancel.addEventListener("click", () => this.close());
+	}
+
+	onClose(): void {
+		this.contentEl.empty();
+		if (!this.resolved) this.resolve(false);
+	}
+}
+
+/** Show a confirmation dialog and await the choice (`false` on dismiss). */
+export function confirm(
+	app: App,
+	options: ConfirmOptions
+): Promise<boolean> {
+	return new Promise((resolve) => {
+		new ConfirmModal(app, options, resolve).open();
+	});
+}
+
 /**
  * Fuzzy picker over a fixed list of project-card files. Resolves the chosen
  * file, or `null` if dismissed without a choice.
