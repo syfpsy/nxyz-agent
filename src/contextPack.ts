@@ -1,5 +1,5 @@
-import { App, TFile, normalizePath } from "obsidian";
-import { ContextAssembly, NxyzAgentSettings, ResolvedProject } from "./types";
+import { App, TFile, TFolder, normalizePath } from "obsidian";
+import { ContextAssembly, LinkedNote, NxyzAgentSettings, ResolvedProject } from "./types";
 import {
 	collectBacklinks,
 	createFileIfMissing,
@@ -24,6 +24,7 @@ import {
 function renderSettingsSummary(s: NxyzAgentSettings): string {
 	return [
 		`- Include active note: ${s.includeActiveNote}`,
+		`- Include work log: ${s.includeWorkLog}`,
 		`- Include linked notes: ${s.includeLinkedNotes}`,
 		`- Include backlinks: ${s.includeBacklinks}`,
 		`- Max context characters: ${s.maxContextChars}`,
@@ -68,6 +69,21 @@ export async function assembleContext(
 		? await collectBacklinks(app, project.file, settings.ignoredFolders)
 		: [];
 
+	let workLog: ContextAssembly["workLog"] = null;
+	if (settings.includeWorkLog) {
+		const logPath = normalizePath(
+			`${settings.workLogFolder}/${project.slug}/log.md`
+		);
+		const logEntry = app.vault.getAbstractFileByPath(logPath);
+		if (logEntry instanceof TFile) {
+			try {
+				workLog = { file: logEntry, content: await app.vault.cachedRead(logEntry) };
+			} catch {
+				workLog = null;
+			}
+		}
+	}
+
 	return {
 		project,
 		generatedAt: getCurrentDateTimeString(),
@@ -75,6 +91,7 @@ export async function assembleContext(
 		activeNote,
 		linkedNotes,
 		backlinks,
+		workLog,
 		settingsSummary: renderSettingsSummary(settings),
 		constraints: CONTEXT_CONSTRAINTS,
 		truncated: false,
@@ -89,6 +106,13 @@ function condenseContext(
 	const parts: string[] = [
 		`[Project card — ${a.project.name}]\n${a.cardContent.trim()}`,
 	];
+	if (a.workLog) {
+		// Work log goes right after the card: it is the project's history and is
+		// the most relevant supplemental context for an AI agent doing follow-up work.
+		parts.push(
+			`[Work log — ${a.project.slug}]\n${a.workLog.content.trim()}`
+		);
+	}
 	if (a.activeNote) {
 		parts.push(
 			`[Current note — ${a.activeNote.file.basename}]\n${a.activeNote.content.trim()}`

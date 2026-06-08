@@ -36,6 +36,8 @@ export interface NxyzAgentSettings {
 	includeBacklinks: boolean;
 	/** Include the currently active note. */
 	includeActiveNote: boolean;
+	/** Include the project work log (log.md) in the assembled context. */
+	includeWorkLog: boolean;
 
 	// --- AI (bring your own key) ---------------------------------------------
 	/** Which provider the chat panel talks to. */
@@ -64,6 +66,7 @@ export const DEFAULT_SETTINGS: NxyzAgentSettings = {
 	includeLinkedNotes: true,
 	includeBacklinks: false,
 	includeActiveNote: true,
+	includeWorkLog: true,
 	aiProvider: "deepseek",
 	deepseekApiKey: "",
 	openrouterApiKey: "",
@@ -123,6 +126,8 @@ export interface ContextAssembly {
 	activeNote: LinkedNote | null;
 	linkedNotes: LinkedNote[];
 	backlinks: LinkedNote[];
+	/** The project work log (log.md), if enabled and present. */
+	workLog: LinkedNote | null;
 	settingsSummary: string;
 	constraints: string[];
 	/** True if any section was cut to honour maxContextChars. */

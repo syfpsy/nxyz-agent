@@ -31,6 +31,15 @@ All notable changes to **nxyz agent** are documented here. The format follows
 - `saveContextPack` datetime stamps now strip spaces as well as colons (the file was named
   `my-project-2026-06-08 14-30.md`; now correctly `my-project-2026-06-08-14-30.md`).
 
+### Added (batch 6)
+- **Work log in context** — the project work log (`log.md`) is now included in the context pack and
+  chat context by default. It slots in immediately after the project card (highest priority after the
+  card itself) so the AI always sees recent project history. Toggled by the new **Include work log**
+  setting (default on). The context pack document shows it under "Additional context" → Work log.
+- **Project card template: AI override hints** — new cards now include commented-out `ai_provider`
+  and `ai_model` frontmatter lines so users know the per-project override fields exist.
+- README settings table updated to document the new toggle.
+
 ### Added (batch 5)
 - **Control panel: "Mark reviewed today" button** — stamps `last_reviewed` to today's date in the
   project card frontmatter with one click (updates or inserts the field). The stale-indicator added

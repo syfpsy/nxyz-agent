@@ -192,6 +192,9 @@ stack: []
 tags: [project, nxyz-agent]
 last_reviewed: ${date}
 agent_scope: one-repo-at-a-time
+# Optional: override the AI provider/model for this project's chat and Compose.
+# ai_provider: deepseek   # deepseek | openrouter | openai
+# ai_model: deepseek-chat
 ---
 
 # ${name}
@@ -309,6 +312,11 @@ ${condensedContext}`;
 /** Render the "Additional context" section from the assembled parts. */
 function renderAdditionalContext(a: ContextAssembly): string {
 	const parts: string[] = [];
+	if (a.workLog) {
+		parts.push(
+			`### Work log — ${a.project.slug}\n\n${a.workLog.content.trim()}`
+		);
+	}
 	if (a.activeNote) {
 		parts.push(
 			`### Current note — ${a.activeNote.file.basename}\n\n${a.activeNote.content.trim()}`

@@ -75,6 +75,7 @@ optional AI features (chat and Compose) are covered below.
 | Default project status | `active` | Status stamped into a new card. |
 | Ignored folders | `.obsidian, .git, node_modules, dist, build` | Skipped when reading linked notes / backlinks. |
 | Maximum context characters | `24000` | Hard ceiling on the assembled agent context. |
+| Include work log | `true` | Include the project work log (log.md) in the assembled context. Recommended — the log is the project's history. |
 | Include linked notes | `true` | Include notes the card links out to. |
 | Include backlinks | `false` | Include notes that link back to the card. |
 | Include current active note | `true` | Include the currently open note. |

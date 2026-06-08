@@ -116,6 +116,18 @@ export class NxyzAgentSettingTab extends PluginSettingTab {
 			);
 
 		new Setting(containerEl)
+			.setName("Include work log")
+			.setDesc(
+				"Include the project work log (log.md) in the context pack and chat context. Recommended — the log is the project's history."
+			)
+			.addToggle((t) =>
+				t.setValue(s.includeWorkLog).onChange(async (v) => {
+					s.includeWorkLog = v;
+					await this.plugin.saveSettings();
+				})
+			);
+
+		new Setting(containerEl)
 			.setName("Include linked notes")
 			.setDesc("Include notes the project card links out to.")
 			.addToggle((t) =>
